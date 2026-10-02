@@ -1,0 +1,1079 @@
+/* ==========================================================================
+   styles.css · Italia ⇄ Colombia — hora en vivo con su cielo real
+   --------------------------------------------------------------------------
+   Qué hace: todo el diseño de la página: el escenario, las dos "ventanas de
+   cielo", el sol, la luna, las nubes, las siluetas, la bandera que ondea,
+   el reloj con dígitos que ruedan, el puente con la diferencia horaria y
+   el aviso del viaje en el tiempo.
+
+   Cómo se conecta con el JS: script.js escribe variables CSS en cada
+   tarjeta (.place) una vez por segundo: colores del cielo (--sky-top,
+   --sky-mid, --sky-bot), posiciones del sol/luna (--sun-x, --sun-y...),
+   colores del paisaje (--c-far, --c-land...), nivel de luces nocturnas
+   (--lights), etc. Aquí solo se USAN esas variables; los valores que se
+   ven abajo en .place--it / .place--co son el respaldo (cielo de día) por
+   si el JS no cargara.
+
+   Índice
+     1.  Tokens de diseño
+     2.  Base y accesibilidad
+     3.  Escenario (layout general)
+     4.  Tarjeta de lugar
+     5.  Cielo y estrellas
+     6.  Sol
+     7.  Luna
+     8.  Nubes
+     9.  Paisaje (siluetas) y luces
+     10. Reflejos sobre el mar (Cartagena)
+     11. Velo de legibilidad
+     12. Encabezado: bandera, país y ciudad
+     13. Reloj con dígitos rodantes
+     14. Fecha y "+1 día"
+     15. Puente central (diferencia horaria)
+     16. Aviso de viaje en el tiempo
+     17. Animaciones
+     18. Responsive
+     19. Movimiento reducido
+   ========================================================================== */
+
+
+/* ==========================================================================
+   1. TOKENS DE DISEÑO
+   Paleta corta: fondo carbón neutro + tinta marfil. El color de verdad lo
+   ponen los cielos, por eso el resto de la página es sobrio.
+   ========================================================================== */
+:root {
+  --bg: #0b0c11;
+  --ink: #f6f3ec;
+  --ink-2: rgba(246, 243, 236, .8);
+  --ink-3: rgba(246, 243, 236, .58);
+  --hair: rgba(255, 255, 255, .12);
+
+  --font-display: "Fraunces", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --font-ui: "Outfit", "Avenir Next", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+
+  --ease-out: cubic-bezier(.2, .8, .2, 1);
+  --radius: 26px;
+  --gap: clamp(14px, 2.4vw, 34px);
+
+  /* Ancho de cada tarjeta: crece con la pantalla (máx. 440px) pero nunca
+     más alto que la ventana (relación 3:4). Se recalcula con svh abajo. */
+  --card-w: min(clamp(250px, 35vw, 440px), calc((100vh - 80px) * .75));
+}
+
+/* svh = alto "seguro" en celulares (sin contar barras del navegador). */
+@supports (height: 100svh) {
+  :root { --card-w: min(clamp(250px, 35vw, 440px), calc((100svh - 80px) * .75)); }
+}
+
+
+/* ==========================================================================
+   2. BASE Y ACCESIBILIDAD
+   ========================================================================== */
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  background-color: var(--bg);
+  /* Luz ambiental muy suave detrás de las tarjetas (neutra, sin morados). */
+  background-image:
+    radial-gradient(56rem 34rem at 50% 44%, rgba(70, 74, 90, .22), transparent 70%),
+    radial-gradient(42rem 26rem at 50% 115%, rgba(0, 0, 0, .55), transparent 70%);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* Texto solo para lectores de pantalla (título, hora hablada, etc.). */
+.sr-only {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+
+/* ==========================================================================
+   3. ESCENARIO
+   Computador/tablet: [Italia] [puente] [Colombia] en una fila.
+   Celular (≤ 719px): se apilan (ver sección 18).
+   ========================================================================== */
+.stage {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--card-w) auto var(--card-w);
+  align-items: center;
+  gap: var(--gap);
+  padding:
+    max(clamp(16px, 4vh, 40px), env(safe-area-inset-top))
+    max(clamp(16px, 3vw, 40px), env(safe-area-inset-right))
+    max(clamp(16px, 4vh, 40px), env(safe-area-inset-bottom))
+    max(clamp(16px, 3vw, 40px), env(safe-area-inset-left));
+}
+
+
+/* ==========================================================================
+   4. TARJETA DE LUGAR (.place)
+   Es un "container" de tamaño: adentro todo se mide en cqw/cqh (porcentaje
+   del ancho/alto de la tarjeta), así el reloj y los textos escalan solos.
+   La sombra exterior (--ambient) toma el color del cielo: azul de día,
+   naranja al atardecer, casi nada de noche.
+   ========================================================================== */
+.place {
+  /* Respaldo de tamaños internos (navegadores sin container queries). */
+  --pad: 20px;
+  --clock-size: 3rem;
+  --flag-w: 34px;
+
+  position: relative;
+  width: var(--card-w);
+  aspect-ratio: 3 / 4;
+  border-radius: var(--radius);
+  container-type: size;
+  isolation: isolate;
+  background: #0d1430;
+  box-shadow:
+    0 32px 80px -34px var(--ambient, rgba(90, 150, 220, .45)),
+    0 14px 34px -16px rgba(0, 0, 0, .7);
+
+  /* Arrastre horizontal = viaje en el tiempo; el scroll vertical sigue libre. */
+  cursor: grab;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+}
+
+@supports (width: 1cqw) {
+  .place {
+    --pad: clamp(14px, 6.2cqw, 28px);
+    --clock-size: clamp(1.9rem, min(15.5cqw, 16cqh), 4.6rem);
+    --flag-w: clamp(24px, 9.5cqw, 40px);
+  }
+}
+
+.place.is-dragging { cursor: grabbing; }
+
+.place:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, .78);
+  outline-offset: 5px;
+}
+
+/* Borde fino de luz por encima de todo (da acabado de "vidrio"). */
+.place::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08);
+  pointer-events: none;
+}
+
+/* Colores de respaldo (cielo de día) — script.js los reemplaza en vivo. */
+.place--it {
+  --sky-top: #2c6bcc;
+  --sky-mid: #5ca2ea;
+  --sky-bot: #b5dcf8;
+  --c-far: #93abc0;
+  --c-far2: #7d95ad;
+  --c-dome: #7d95ad;
+  --c-mid: #4f6e55;
+  --c-land: #d6c098;
+  --c-land2: #b39a72;
+  --c-arch: #6a5843;
+  --c-tree: #2d4a34;
+  --c-near: #4a6440;
+}
+
+.place--co {
+  --sky-top: #2c6bcc;
+  --sky-mid: #5ca2ea;
+  --sky-bot: #b5dcf8;
+  --c-far: #a4b6c6;
+  --c-sea-top: #5bb0cf;
+  --c-sea-bot: #1b6f95;
+  --c-sea-line: #d9f1fb;
+  --c-mid: #d8b27e;
+  --c-wall: #b89c76;
+  --c-wall2: #8f7655;
+  --c-tower: #e2ac4f;
+  --c-trim: #f3e6c9;
+  --c-arch: #5a4128;
+  --c-clock: #f6efdc;
+  --c-tree: #2a5636;
+  --c-near: #7d6a55;
+}
+
+
+/* ==========================================================================
+   5. CIELO Y ESTRELLAS
+   Fondo = degradado de 3 colores (cenit → medio → horizonte) + un
+   resplandor elíptico en el horizonte, centrado donde está el sol (rosado
+   y naranja en amanecer/atardecer). --horizon lo mide script.js en px.
+   ========================================================================== */
+.sky {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  /* clip-path asegura el recorte redondeado también en Safari. */
+  clip-path: inset(0 round var(--radius));
+  background:
+    radial-gradient(var(--glow-rx, 70%) var(--glow-ry, 40%) at var(--glow-x, 50%) var(--horizon, 62%),
+      var(--glow-color, transparent), transparent 72%),
+    linear-gradient(180deg,
+      var(--sky-top) 0%,
+      var(--sky-mid) calc(var(--horizon, 62%) * .62),
+      var(--sky-bot) var(--horizon, 62%));
+}
+
+/* Canvas de estrellas y fugaces (lo dibuja script.js). */
+.sky__stars {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+
+/* ==========================================================================
+   6. SOL
+   Se mueve con transform (sin recalcular el layout). La transición de 1 s
+   suaviza el paso de un segundo al otro; durante el viaje en el tiempo se
+   apaga para que siga al dedo sin retraso.
+   ========================================================================== */
+.sun,
+.moon {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform: translate3d(var(--x, -200px), var(--y, -200px), 0) translate(-50%, -50%);
+  will-change: transform;
+  pointer-events: none;
+}
+
+.is-ready .sun,
+.is-ready .moon {
+  transition: transform 1s linear, opacity 1s linear;
+}
+
+.is-traveling .sun,
+.is-traveling .moon,
+.is-traveling .glint {
+  transition: none;
+}
+
+.sun {
+  --x: var(--sun-x);
+  --y: var(--sun-y);
+  width: var(--sun-d, 40px);
+  height: var(--sun-d, 40px);
+  opacity: var(--sun-o, 1);
+}
+
+/* Halo amplio de luz. */
+.sun__halo {
+  position: absolute;
+  inset: -150%;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--sun-halo, rgba(255, 236, 180, .35)) 0%, transparent 62%);
+}
+
+/* Rayos suaves que giran muy lento (solo visibles con el sol alto). */
+.sun__rays {
+  position: absolute;
+  inset: -85%;
+  border-radius: 50%;
+  background: repeating-conic-gradient(rgba(255, 246, 220, .22) 0deg 3deg, transparent 3deg 15deg);
+  -webkit-mask: radial-gradient(circle, #000 20%, transparent 64%);
+  mask: radial-gradient(circle, #000 20%, transparent 64%);
+  opacity: var(--rays-o, .5);
+  animation: spin 140s linear infinite;
+}
+
+/* Disco: blanco cálido arriba, naranja/rojo cerca del horizonte. Se aplasta
+   un poquito al salir/ponerse (efecto real de la refracción). */
+.sun__disc {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 45% 42%, #fffdf5 0%, var(--sun-core, #fff7df) 42%, var(--sun-edge, #ffe2a1) 100%);
+  box-shadow: 0 0 calc(var(--sun-d, 40px) * .5) calc(var(--sun-d, 40px) * .06) var(--sun-halo, rgba(255, 236, 180, .35));
+  transform: scaleY(var(--sun-squash, 1));
+}
+
+
+/* ==========================================================================
+   7. LUNA
+   La fase (llena, creciente, menguante...) es la real del día: script.js
+   cambia el recorte SVG. La parte oscura se ve tenue ("luz cenicienta").
+   ========================================================================== */
+.moon {
+  --x: var(--moon-x);
+  --y: var(--moon-y);
+  width: var(--moon-d, 32px);
+  height: var(--moon-d, 32px);
+  opacity: var(--moon-o, 0);
+}
+
+.moon__halo {
+  position: absolute;
+  inset: -120%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(214, 224, 255, .3) 0%, rgba(214, 224, 255, .08) 34%, transparent 62%);
+  opacity: var(--moon-glow, 1);
+}
+
+.moon__svg {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 0 5px rgba(228, 234, 255, .4));
+}
+
+.moon__dark { fill: #2c3448; opacity: .72; }
+.moon__maria { fill: #b0ab9b; opacity: .5; }
+.moon__crater { fill: #fffef8; opacity: .6; }
+
+
+/* ==========================================================================
+   8. NUBES
+   Cruzan de izquierda a derecha (cqw = ancho de la tarjeta). Blancas de
+   día, rosadas/naranjas al atardecer y gris azulado tenue de noche.
+   ========================================================================== */
+.clouds {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.cloud {
+  position: absolute;
+  left: 0;
+  top: var(--top);
+  width: var(--w);
+  height: auto;
+  overflow: visible;
+  opacity: var(--cloud-a, .9);
+  transform: translateX(-110%);
+  animation: drift var(--dur) linear infinite;
+  animation-delay: var(--delay);
+  will-change: transform;
+}
+
+.cloud__body { fill: var(--cloud, #fff); }
+.cloud__shade { fill: var(--cloud-shade, #dbe6f3); opacity: .55; }
+
+
+/* ==========================================================================
+   9. PAISAJE (siluetas SVG) Y LUCES
+   Cada clase de color lee una variable que script.js calcula mezclando el
+   color de día y el de noche según la altura del sol (más bruma en lo
+   lejano, tinte cálido en el atardecer).
+   ========================================================================== */
+.scene {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.c-far   { fill: var(--c-far); }
+.c-far2  { fill: var(--c-far2); }
+.c-dome  { fill: var(--c-dome); }
+.c-mid   { fill: var(--c-mid); }
+.c-land  { fill: var(--c-land); }
+.c-land2 { fill: var(--c-land2); }
+.c-tree  { fill: var(--c-tree); }
+.c-near  { fill: var(--c-near); }
+.c-wall  { fill: var(--c-wall); }
+.c-wall2 { fill: var(--c-wall2); }
+.c-tower { fill: var(--c-tower); }
+.c-trim  { fill: var(--c-trim); }
+.arch    { fill: var(--c-arch); }
+
+/* Mar de Cartagena: degradado con las variables del JS + olitas. */
+.sea-top { stop-color: var(--c-sea-top); }
+.sea-bot { stop-color: var(--c-sea-bot); }
+
+.waves {
+  fill: none;
+  stroke: var(--c-sea-line);
+  stroke-width: .8;
+  stroke-linecap: round;
+  opacity: .45;
+}
+
+/* La capa de olas completa va y viene 7px (animación por GPU). */
+.scene--waves {
+  animation: waves 7s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+/* Ventanas: cada una se prende cuando --lights supera su umbral --th,
+   así la ciudad se va encendiendo de a poco al anochecer. */
+.win rect {
+  fill: #ffd58e;
+  opacity: clamp(0, calc((var(--lights, 0) - var(--th, 0)) * 6), 1);
+}
+
+.win--cool rect { fill: #fff2cc; }
+
+/* Faroles: poste oscuro, bombillo y resplandor que se encienden de noche. */
+.lamp__post { fill: #1f2228; }
+.lamp__bulb { fill: #ffe3a8; opacity: var(--lights, 0); }
+.lamp__glow { opacity: var(--lights, 0); }
+
+/* Reloj de la Torre del Reloj (marca la hora real de Cartagena). */
+.clockface { fill: var(--c-clock, #f6efdc); }
+.clockface__rim { fill: none; stroke: var(--c-trim); stroke-width: 1.1; }
+.clockface__glow { opacity: calc(var(--lights, 0) * .9); }
+.clockface__hands path {
+  fill: none;
+  stroke: #2b2117;
+  stroke-width: 1.2;
+  stroke-linecap: round;
+}
+
+
+/* ==========================================================================
+   10. REFLEJOS SOBRE EL MAR (solo Cartagena)
+   Franja de destellos debajo del sol o la luna; más fuerte cuando el astro
+   está bajo. Posición, alto y opacidad vienen de script.js.
+   ========================================================================== */
+.glint {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--glint-w, 44px);
+  height: var(--glint-h, 36px);
+  transform: translate3d(var(--gx, -300px), var(--glint-top, 300px), 0) translateX(-50%);
+  opacity: var(--go, 0);
+  pointer-events: none;
+  will-change: transform;
+}
+
+.is-ready .glint { transition: transform 1s linear, opacity 1s linear; }
+
+.glint > span {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(180deg, var(--gc) 0 1.6px, transparent 1.6px 4.6px);
+  -webkit-mask: radial-gradient(50% 100% at 50% 0%, #000 22%, transparent 100%);
+  mask: radial-gradient(50% 100% at 50% 0%, #000 22%, transparent 100%);
+  animation: shimmer 2.8s ease-in-out infinite;
+}
+
+.glint--sun {
+  --gx: var(--glint-sun-x);
+  --go: var(--glint-sun-o);
+  --gc: var(--glint-sun-c, rgba(255, 214, 150, .9));
+}
+
+.glint--moon {
+  --gx: var(--glint-moon-x);
+  --go: var(--glint-moon-o);
+  --gc: rgba(226, 232, 255, .85);
+}
+
+
+/* ==========================================================================
+   11. VELO DE LEGIBILIDAD
+   Oscurece un poco arriba (país) y abajo (reloj) para que el texto blanco
+   se lea siempre, sea mediodía o medianoche.
+   ========================================================================== */
+.sky__veil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg,
+    rgba(4, 7, 16, var(--veil-top, .24)) 0%,
+    rgba(4, 7, 16, 0) 27%,
+    rgba(4, 7, 16, 0) 56%,
+    rgba(4, 7, 16, var(--veil-bot, .5)) 100%);
+}
+
+
+/* ==========================================================================
+   12. ENCABEZADO: BANDERA, PAÍS Y CIUDAD
+   ========================================================================== */
+.place__head {
+  position: absolute;
+  z-index: 2;
+  top: var(--pad);
+  left: calc(var(--pad) + 6px);
+  right: var(--pad);
+  display: flex;
+  align-items: center;
+  gap: .8em;
+  pointer-events: none;
+  text-shadow: 0 1px 14px rgba(0, 0, 0, .35);
+}
+
+.place__names { min-width: 0; }
+
+.place__country {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.5rem;
+  line-height: 1;
+  letter-spacing: -.01em;
+}
+
+.place__city {
+  margin: .32em 0 0;
+  font-size: .72rem;
+  font-weight: 500;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+@supports (width: 1cqw) {
+  .place__country { font-size: clamp(1.05rem, 7.4cqw, 2rem); }
+  .place__city { font-size: clamp(.58rem, 3.3cqw, .82rem); }
+}
+
+/* Bandera con astil: el "paño" se divide en franjas verticales (las crea
+   script.js) que suben y bajan desfasadas → efecto de tela al viento. El
+   lado pegado al astil casi no se mueve; la punta se mueve más. */
+.flag {
+  position: relative;
+  flex: none;
+  width: var(--flag-w);
+  height: calc(var(--flag-w) * .667);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, .35));
+}
+
+/* Astil */
+.flag::before {
+  content: "";
+  position: absolute;
+  left: -5px;
+  top: -5px;
+  width: 2px;
+  height: calc(100% + 16px);
+  border-radius: 2px;
+  background: linear-gradient(90deg, #eef0f5, #8d94a4);
+}
+
+/* Remate del astil */
+.flag::after {
+  content: "";
+  position: absolute;
+  left: -6.5px;
+  top: -9px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fff, #aab1c0);
+}
+
+.flag--it {
+  /* Colores oficiales (Pantone del decreto de 2006). */
+  --flag-bg: linear-gradient(90deg, #008c45 0 33.34%, #f4f5f0 33.34% 66.67%, #cd212a 66.67% 100%);
+}
+
+.flag--co {
+  /* Amarillo (mitad), azul y rojo (un cuarto cada uno). */
+  --flag-bg: linear-gradient(180deg, #fcd116 0 50%, #003893 50% 75%, #ce1126 75% 100%);
+}
+
+.flag__cloth {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  border-radius: 2px;
+  background: var(--flag-bg);
+}
+
+.flag__cloth.is-waving { background: none; }
+
+.flag__strip {
+  position: relative;
+  flex: 1 1 0;
+  height: 100%;
+  background-image: var(--flag-bg);
+  background-size: calc(var(--n) * 100%) 100%;
+  background-position: calc(var(--i) / (var(--n) - 1) * 100%) 0;
+  animation: flag-wave 1.9s ease-in-out infinite;
+  animation-delay: calc(var(--i) * -.12s);
+}
+
+/* Sombra que viaja por la tela (los pliegues). */
+.flag__strip::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: #000;
+  opacity: 0;
+  animation: flag-shade 1.9s ease-in-out infinite;
+  animation-delay: inherit;
+}
+
+.flag__strip:first-child { border-radius: 2px 0 0 2px; }
+.flag__strip:last-child { border-radius: 0 2px 2px 0; }
+
+
+/* ==========================================================================
+   13. RELOJ CON DÍGITOS RODANTES
+   Cada .slot tiene un ancho fijo (no "baila" al cambiar el número). Al
+   cambiar, el dígito viejo sube y se desvanece mientras el nuevo entra
+   desde abajo (clases .is-in / .is-out que pone script.js).
+   ========================================================================== */
+.place__time {
+  position: absolute;
+  z-index: 2;
+  left: calc(var(--pad) + 2px);
+  right: var(--pad);
+  bottom: calc(var(--pad) * .9);
+  pointer-events: none;
+}
+
+.clock {
+  margin: 0;
+  display: flex;
+  align-items: stretch;
+  line-height: 1;
+  /* drop-shadow (y no text-shadow): así la sombra no queda recortada en
+     rectángulos por el overflow de cada dígito. */
+  filter: drop-shadow(0 2px 10px rgba(0, 0, 0, .28));
+}
+
+.clock__main {
+  display: flex;
+  align-items: center;
+  font-size: var(--clock-size);
+  font-weight: 250;
+  letter-spacing: -.01em;
+}
+
+.clock__colon {
+  display: inline-block;
+  width: .28em;
+  text-align: center;
+  transform: translateY(-.07em);
+  opacity: .72;
+}
+
+.clock__side {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  margin-left: .5em;
+  padding: .16em 0 .12em;
+  font-size: calc(var(--clock-size) * .3);
+}
+
+.clock__sec {
+  display: flex;
+  font-weight: 400;
+  color: var(--ink-2);
+}
+
+.clock__period {
+  font-weight: 500;
+  letter-spacing: .05em;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.slot {
+  position: relative;
+  display: inline-block;
+  width: .6em;
+  height: 1.12em;
+  overflow: hidden;
+  transition: width .45s var(--ease-out);
+}
+
+.clock__sec .slot { width: .64em; }
+
+/* La decena de la hora desaparece en 1–9 (ej. "9:42" y no "09:42"). */
+.slot.is-empty { width: 0; }
+
+.g {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform .55s var(--ease-out), opacity .45s ease;
+}
+
+.g.is-in  { transform: translateY(68%); opacity: 0; }
+.g.is-out { transform: translateY(-68%); opacity: 0; }
+
+
+/* ==========================================================================
+   14. FECHA Y "+1 DÍA"
+   El aviso "+1 día" aparece en la tarjeta que ya pasó a mañana.
+   ========================================================================== */
+.place__date {
+  margin: .55em 0 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5em;
+  font-size: calc(var(--clock-size) * .245);
+  font-weight: 400;
+  letter-spacing: .01em;
+  color: var(--ink-2);
+}
+
+.place__shift {
+  padding: .14em .6em .16em;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, .17);
+  color: var(--ink);
+  font-size: .86em;
+  font-weight: 500;
+}
+
+.place__shift[hidden] { display: none; }
+
+
+/* ==========================================================================
+   15. PUENTE CENTRAL (diferencia horaria)
+   Insignia redonda con el número de horas; un hilo punteado une las dos
+   tarjetas y sus puntos viajan hacia Italia (el país que va adelante).
+   ========================================================================== */
+.bridge {
+  --badge: clamp(78px, 8.4vw, 112px);
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: clamp(90px, 10vw, 140px);
+  height: var(--badge);
+  text-align: center;
+}
+
+.bridge__wire {
+  position: absolute;
+  top: 50%;
+  left: calc(-1 * var(--gap));
+  right: calc(-1 * var(--gap));
+  height: 1px;
+  background: repeating-linear-gradient(90deg, rgba(255, 255, 255, .55) 0 5px, transparent 5px 11px);
+  -webkit-mask: linear-gradient(90deg, transparent, #000 22%, #000 78%, transparent);
+  mask: linear-gradient(90deg, transparent, #000 22%, #000 78%, transparent);
+  opacity: .55;
+  animation: wire 1.4s linear infinite;
+}
+
+.bridge__badge {
+  position: relative;
+  margin: 0;
+  width: var(--badge);
+  height: var(--badge);
+  border-radius: 50%;
+  display: grid;
+  place-content: center;
+  gap: .18rem;
+  background: radial-gradient(circle at 50% 28%, #1f2331 0%, #12141b 72%);
+  box-shadow:
+    inset 0 0 0 1px var(--hair),
+    inset 0 1px 0 rgba(255, 255, 255, .06),
+    0 20px 44px -18px rgba(0, 0, 0, .85);
+}
+
+/* Bisel punteado que gira lento, como la esfera de un reloj. */
+.bridge__badge::after {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  border: 1px dashed rgba(255, 255, 255, .16);
+  animation: spin 80s linear infinite;
+}
+
+.bridge__num {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: calc(var(--badge) * .42);
+  line-height: .9;
+  font-variant-numeric: lining-nums;
+}
+
+.bridge__unit {
+  padding-left: .24em;
+  font-size: calc(var(--badge) * .115);
+  font-weight: 500;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.bridge__note {
+  position: absolute;
+  top: calc(100% + 16px);
+  left: 50%;
+  width: max-content;
+  max-width: 9.5rem;
+  margin: 0;
+  transform: translateX(-50%);
+  font-size: .8rem;
+  line-height: 1.35;
+  color: var(--ink-3);
+}
+
+
+/* ==========================================================================
+   16. AVISO DE VIAJE EN EL TIEMPO
+   Pastilla flotante arriba al centro: "+3 h 20 min" mientras se arrastra.
+   ========================================================================== */
+.travel {
+  position: fixed;
+  z-index: 10;
+  top: max(14px, env(safe-area-inset-top));
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .5rem 1rem .5rem .8rem;
+  border-radius: 99px;
+  background: rgba(18, 20, 28, .86);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  box-shadow: inset 0 0 0 1px var(--hair), 0 12px 30px -12px rgba(0, 0, 0, .75);
+  font-size: .92rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translate(-50%, -14px);
+  transition: opacity .3s ease, transform .35s var(--ease-out);
+  pointer-events: none;
+}
+
+.travel.is-on {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.travel__icon {
+  width: 1.05rem;
+  height: 1.05rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+
+/* ==========================================================================
+   17. ANIMACIONES
+   ========================================================================== */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Nubes: de afuera a la izquierda hasta afuera a la derecha. */
+@keyframes drift {
+  from { transform: translateX(-110%); }
+  to   { transform: translateX(calc(100cqw + 10%)); }
+}
+
+/* Bandera: cada franja sube y baja según su amplitud --amp (px). */
+@keyframes flag-wave {
+  0%, 100% { transform: translateY(calc(var(--amp, 1) * -1px)); }
+  50%      { transform: translateY(calc(var(--amp, 1) * 1px)); }
+}
+
+@keyframes flag-shade {
+  0%, 100% { opacity: .1; }
+  25%      { opacity: .22; }
+  50%      { opacity: .03; }
+  75%      { opacity: 0; }
+}
+
+@keyframes waves {
+  to { transform: translateX(7px); }
+}
+
+@keyframes shimmer {
+  0%, 100% { transform: scaleX(1); opacity: .8; }
+  50%      { transform: scaleX(1.28); opacity: 1; }
+}
+
+/* Hilo del puente: los puntos avanzan hacia la izquierda (Italia). */
+@keyframes wire {
+  to { background-position: -11px 0; }
+}
+
+/* Entrada de la página. */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(18px) scale(.985); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.place { animation: rise .9s var(--ease-out) both; }
+.place--co { animation-delay: .12s; }
+.bridge { animation: fade-in 1s .35s ease both; }
+
+
+/* ==========================================================================
+   18. RESPONSIVE
+   ========================================================================== */
+
+/* Pantallas grandes / TV: un poco más de aire. */
+@media (min-width: 1600px) {
+  :root { --gap: 44px; }
+  .bridge { --badge: 120px; }
+  .bridge__note { font-size: .9rem; }
+}
+
+/* Celular y tablet vertical: tarjetas apiladas y lo bastante bajitas para
+   que las DOS quepan en la pantalla sin hacer scroll. El paisaje (viewBox
+   ancho) muestra más ciudad a los lados en este formato. */
+@media (max-width: 719px), (orientation: portrait) and (max-width: 1100px) {
+  .stage {
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+    max-width: 680px;
+    gap: 10px;
+    padding:
+      max(14px, env(safe-area-inset-top))
+      max(14px, env(safe-area-inset-right))
+      max(14px, env(safe-area-inset-bottom))
+      max(14px, env(safe-area-inset-left));
+  }
+
+  .place {
+    width: 100%;
+    aspect-ratio: auto;
+    height: clamp(232px, calc((100vh - 116px) / 2), 540px);
+  }
+
+  @supports (height: 100svh) {
+    .place { height: clamp(232px, calc((100svh - 116px) / 2), 540px); }
+  }
+
+  @supports (width: 1cqw) {
+    .place {
+      --pad: clamp(13px, 4.6cqw, 30px);
+      --clock-size: clamp(1.8rem, min(11.8cqw, 16cqh), 4.2rem);
+      --flag-w: clamp(24px, 7.4cqw, 42px);
+    }
+    .place__country { font-size: clamp(1.05rem, 5.6cqw, 2rem); }
+    .place__city { font-size: clamp(.56rem, 2.7cqw, .84rem); }
+  }
+
+  /* Puente en horizontal: ── ( 7 HORAS ) ── y la nota al lado. */
+  .bridge {
+    --badge: 40px;
+    width: 100%;
+    height: var(--badge);
+    display: flex;
+    justify-content: center;
+    gap: .7rem;
+  }
+
+  .bridge__wire {
+    left: -14px;
+    right: -14px;
+    -webkit-mask: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+    mask: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+  }
+
+  .bridge__badge {
+    width: auto;
+    height: var(--badge);
+    padding: 0 1rem;
+    border-radius: 99px;
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: .4rem;
+  }
+
+  .bridge__badge::after { display: none; }
+
+  .bridge__num { font-size: 1.45rem; line-height: var(--badge); }
+  .bridge__unit { font-size: .66rem; letter-spacing: .2em; }
+
+  .bridge__note {
+    position: relative;
+    top: auto;
+    left: auto;
+    transform: none;
+    max-width: none;
+    padding: .38rem .8rem;
+    border-radius: 99px;
+    background: var(--bg);
+    font-size: .76rem;
+  }
+}
+
+/* Celular acostado (pantalla baja): se mantienen lado a lado y el ancho
+   lo limita el alto de la pantalla (ver --card-w). */
+@media (max-height: 520px) and (min-width: 720px) {
+  .bridge { --badge: 72px; }
+  .bridge__note { font-size: .72rem; top: calc(100% + 10px); }
+}
+
+
+/* ==========================================================================
+   19. MOVIMIENTO REDUCIDO
+   Si el sistema pide menos animación: sin nubes viajando, sin bandera
+   ondeando, sin dígitos rodantes ni rayos girando. El cielo igual cambia
+   con la hora real (eso no es animación decorativa).
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .cloud,
+  .sun__rays,
+  .flag__strip,
+  .flag__strip::after,
+  .scene--waves,
+  .glint > span,
+  .bridge__wire,
+  .bridge__badge::after,
+  .place,
+  .bridge {
+    animation: none !important;
+  }
+
+  .g,
+  .slot,
+  .travel,
+  .place { transition: none !important; }
+
+  .is-ready .sun,
+  .is-ready .moon,
+  .is-ready .glint { transition: none; }
+}

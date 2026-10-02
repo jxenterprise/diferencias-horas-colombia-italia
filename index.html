@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<!--
+  ══════════════════════════════════════════════════════════════════════
+  index.html · Italia ⇄ Colombia — hora en vivo con su cielo real
+  ──────────────────────────────────────────────────────────────────────
+  Qué es:   Página pequeña que muestra la hora de Roma (Italia) y de
+            Cartagena (Colombia). Cada país tiene su "ventana de cielo":
+            sol de día; luna y estrellas de noche; amanecer y atardecer
+            calculados con astronomía real; y en el centro, la diferencia
+            horaria entre los dos países.
+  Archivos: css/styles.css → diseño, capas del cielo y animaciones.
+            js/script.js   → hora de cada zona, posición del sol, fase de
+                             la luna, colores del cielo, estrellas y el
+                             "viaje en el tiempo" (arrastrar el cielo).
+  Cómo funciona: este HTML trae el esqueleto fijo (tarjetas, siluetas de
+            cada ciudad y textos). Todo lo que cambia con la hora lo pinta
+            script.js escribiendo variables CSS (--sky-top, --c-land, etc.)
+            sobre cada tarjeta. Si el JS no cargara, se ve un cielo de día.
+  ══════════════════════════════════════════════════════════════════════
+-->
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Italia · Colombia — Hora en vivo</title>
+  <meta name="description" content="La hora en vivo de Roma, Italia y Cartagena, Colombia, con su cielo real de día y de noche y la diferencia horaria entre los dos países.">
+  <meta name="theme-color" content="#0b0c11">
+  <meta name="color-scheme" content="dark">
+
+  <!-- Ícono de la pestaña (SVG en línea: sol y luna). Va embebido para no
+       depender de otro archivo y evitar el error 404 de /favicon.ico. -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230e1222'/%3E%3Ccircle cx='25' cy='36' r='13' fill='%23ffc45c'/%3E%3Ccircle cx='43' cy='22' r='10' fill='%23e9ecf6'/%3E%3Ccircle cx='48' cy='18' r='9' fill='%230e1222'/%3E%3C/svg%3E">
+
+  <!-- Tipografías (Google Fonts) cargadas sin bloquear el render:
+       Fraunces → nombres de los países y número de la diferencia.
+       Outfit   → reloj, ciudad, fecha y textos pequeños.
+       Si no hay internet, el CSS cae en fuentes del sistema. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500..700&amp;family=Outfit:wght@200..600&amp;display=swap" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500..700&amp;family=Outfit:wght@200..600&amp;display=swap"></noscript>
+
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="js/script.js" defer></script>
+</head>
+<body>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       ESCENARIO: las dos ventanas de cielo y el puente del centro.
+       En computador van lado a lado; en celular se apilan (ver CSS).
+       ════════════════════════════════════════════════════════════════ -->
+  <main class="stage" data-role="stage">
+    <h1 class="sr-only">Hora en vivo y diferencia horaria entre Italia y Colombia</h1>
+
+    <!-- ┌──────────────────────────────────────────────────────────────┐
+         │ TARJETA · ITALIA (Roma)                                      │
+         │ data-place enlaza esta tarjeta con su configuración en       │
+         │ script.js (zona horaria Europe/Rome y coordenadas del Coliseo)│
+         │ tabindex=0 → con el teclado se puede "viajar en el tiempo"   │
+         │ usando las flechas ← → (Esc vuelve a la hora real).          │
+         └──────────────────────────────────────────────────────────────┘ -->
+    <article class="place place--it" data-place="italia" tabindex="0" aria-labelledby="it-name" aria-describedby="it-sr">
+
+      <!-- CIELO: capas apiladas de atrás hacia adelante.
+           1) degradado + resplandor del horizonte (fondo de .sky)
+           2) canvas de estrellas y estrellas fugaces
+           3) luna  4) sol  5) nubes
+           6) paisaje lejano (SVG)  7) paisaje cercano (SVG)
+           8) velo oscuro arriba/abajo para que los textos siempre se lean -->
+      <div class="sky" aria-hidden="true">
+        <canvas class="sky__stars" data-role="stars"></canvas>
+
+        <!-- LUNA: la forma iluminada (fase real del día) la dibuja script.js
+             cambiando el atributo "d" del recorte #moon-clip-it. -->
+        <div class="moon" data-role="moon">
+          <span class="moon__halo"></span>
+          <svg class="moon__svg" viewBox="0 0 100 100">
+            <defs>
+              <radialGradient id="moon-lit-it" cx="42%" cy="38%" r="70%">
+                <stop offset="0" stop-color="#fffdf4"/>
+                <stop offset=".65" stop-color="#ebe7da"/>
+                <stop offset="1" stop-color="#c9c4b4"/>
+              </radialGradient>
+              <clipPath id="moon-clip-it"><path data-role="moon-phase" d="M50 2a48 48 0 1 1 0 96a48 48 0 1 1 0-96z"/></clipPath>
+            </defs>
+            <circle class="moon__dark" cx="50" cy="50" r="48"/>
+            <g clip-path="url(#moon-clip-it)">
+              <circle cx="50" cy="50" r="48" fill="url(#moon-lit-it)"/>
+              <g class="moon__maria">
+                <ellipse cx="35" cy="33" rx="13" ry="10"/>
+                <ellipse cx="57" cy="32" rx="8" ry="7"/>
+                <ellipse cx="63" cy="47" rx="9" ry="7"/>
+                <ellipse cx="74" cy="58" rx="5" ry="7"/>
+                <ellipse cx="80" cy="36" rx="5" ry="4"/>
+                <ellipse cx="24" cy="54" rx="11" ry="17"/>
+                <ellipse cx="45" cy="66" rx="8" ry="6"/>
+              </g>
+              <circle class="moon__crater" cx="48" cy="83" r="2.6"/>
+            </g>
+          </svg>
+        </div>
+
+        <!-- SOL: halo + rayos suaves + disco. Su posición y color (amarillo
+             de día, naranja al salir/ponerse) los controla script.js. -->
+        <div class="sun" data-role="sun">
+          <span class="sun__halo"></span>
+          <span class="sun__rays"></span>
+          <span class="sun__disc"></span>
+        </div>
+
+        <!-- NUBES: cruzan despacio; su color cambia con la luz del día. -->
+        <div class="clouds">
+          <svg class="cloud" style="--top:24%; --w:30%; --dur:150s; --delay:-40s" viewBox="0 0 120 46"><path class="cloud__body" d="M14 44C5 44 1 37 5 31C2 23 10 16 19 19C21 9 34 4 44 10C50 2 66 1 73 10C80 5 93 7 96 17C106 15 116 23 113 33C118 38 113 44 106 44Z"/><path class="cloud__shade" d="M6 36C24 41 82 42 114 35C114 41 110 44 106 44L14 44C9 44 6 41 6 36Z"/></svg>
+          <svg class="cloud" style="--top:38%; --w:19%; --dur:115s; --delay:-85s" viewBox="0 0 120 46"><path class="cloud__body" d="M14 44C5 44 1 37 5 31C2 23 10 16 19 19C21 9 34 4 44 10C50 2 66 1 73 10C80 5 93 7 96 17C106 15 116 23 113 33C118 38 113 44 106 44Z"/><path class="cloud__shade" d="M6 36C24 41 82 42 114 35C114 41 110 44 106 44L14 44C9 44 6 41 6 36Z"/></svg>
+          <svg class="cloud" style="--top:30%; --w:24%; --dur:185s; --delay:-150s" viewBox="0 0 120 46"><path class="cloud__body" d="M14 44C5 44 1 37 5 31C2 23 10 16 19 19C21 9 34 4 44 10C50 2 66 1 73 10C80 5 93 7 96 17C106 15 116 23 113 33C118 38 113 44 106 44Z"/><path class="cloud__shade" d="M6 36C24 41 82 42 114 35C114 41 110 44 106 44L14 44C9 44 6 41 6 36Z"/></svg>
+        </div>
+
+        <!-- PAISAJE LEJANO · Roma: colinas, ciudad lejana y la cúpula de
+             San Pedro. viewBox 600×480 con el horizonte en y=300; en
+             pantallas angostas se recortan los lados (slice) y en las
+             anchas se ve el paisaje completo. -->
+        <svg class="scene" viewBox="0 0 600 480" preserveAspectRatio="xMidYMax slice">
+          <!-- Colinas -->
+          <path class="c-far" d="M0 298C40 290 86 285 132 289C176 293 214 300 262 297C306 294 346 287 392 287C438 287 470 293 512 295C548 296 578 291 600 290V480H0Z"/>
+          <!-- Ciudad lejana sobre las colinas -->
+          <path class="c-far2" d="M328 300V294H338V291H346V293H356V289H364V292H376V290H386V293H398V291H404V300ZM456 300V291H466V293H474V289H484V292H494V290H504V294H516V292H526V300Z"/>
+          <!-- Basílica y cúpula de San Pedro (tambor, cúpula, linterna y cruz).
+               De noche la cúpula toma un tono cálido, como iluminada. -->
+          <g class="c-dome">
+            <rect x="404" y="286" width="52" height="10"/>
+            <rect x="418" y="276" width="24" height="12"/>
+            <path d="M415 277.5C415 259 445 259 445 277.5Z"/>
+            <rect x="427.6" y="256" width="4.8" height="8.5"/>
+            <path d="M426.6 256.6L430 251.6L433.4 256.6Z"/>
+            <rect x="429.4" y="245.5" width="1.2" height="6.5"/>
+            <rect x="427.8" y="247.2" width="4.4" height="1.1"/>
+          </g>
+          <!-- Ventanitas lejanas: cada una se enciende a su ritmo al
+               anochecer según su umbral --th (0 = primero, 1 = último). -->
+          <g class="win win--far">
+            <rect x="340" y="295" width="1.4" height="1.4" style="--th:.1"/>
+            <rect x="350" y="295.6" width="1.4" height="1.4" style="--th:.55"/>
+            <rect x="359" y="292" width="1.4" height="1.4" style="--th:.3"/>
+            <rect x="370" y="294" width="1.4" height="1.4" style="--th:.7"/>
+            <rect x="380" y="292.6" width="1.4" height="1.4" style="--th:.2"/>
+            <rect x="391" y="295" width="1.4" height="1.4" style="--th:.45"/>
+            <rect x="461" y="294" width="1.4" height="1.4" style="--th:.35"/>
+            <rect x="470" y="295.4" width="1.4" height="1.4" style="--th:.8"/>
+            <rect x="478" y="292.4" width="1.4" height="1.4" style="--th:.15"/>
+            <rect x="488" y="294" width="1.4" height="1.4" style="--th:.6"/>
+            <rect x="498" y="293" width="1.4" height="1.4" style="--th:.25"/>
+            <rect x="510" y="295.6" width="1.4" height="1.4" style="--th:.5"/>
+          </g>
+          <!-- Arboleda (capa media, detrás del Coliseo) -->
+          <path class="c-mid" d="M0 354V330C6 322 16 320 22 326C28 318 40 318 44 326C52 320 62 322 64 330C72 324 82 326 84 332C92 326 102 328 104 334C112 328 124 330 126 336C136 332 146 334 150 340L200 344L400 344C410 336 420 334 428 338C434 330 446 330 450 336C458 330 470 332 472 338C480 332 492 332 496 338C504 330 516 330 520 336C528 328 540 328 544 334C552 326 566 326 570 332C578 326 592 328 600 334V354Z"/>
+        </svg>
+
+        <!-- PAISAJE CERCANO · Roma: Coliseo, pinos piñoneros, cipreses,
+             suelo y faroles. Mismo viewBox que la capa lejana para que
+             todo quede alineado. -->
+        <svg class="scene" viewBox="0 0 600 480" preserveAspectRatio="xMidYMax slice">
+          <defs>
+            <radialGradient id="lamp-glow-it">
+              <stop offset="0" stop-color="#ffd890" stop-opacity=".85"/>
+              <stop offset="1" stop-color="#ffd890" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+
+          <!-- Coliseo: el lado izquierdo conserva sus 4 niveles y el derecho
+               muestra la parte derrumbada (anillo interior más bajo). Los
+               arcos se angostan hacia los extremos por la curvatura. -->
+          <g class="colosseum">
+            <path class="c-land" d="M205 353V284Q205 277 213 276L318 274L321 279L326 278L330 285L335 284L339 291L344 290L348 297L353 296L356 302L388 304Q395 306 395 314V353Z"/>
+            <g class="c-land2">
+              <rect x="205" y="295.5" width="140" height="2.2"/>
+              <rect x="205" y="313.4" width="190" height="2"/>
+              <rect x="205" y="331.6" width="190" height="2"/>
+              <rect x="203" y="350" width="194" height="3"/>
+            </g>
+            <!-- Arcos (3 niveles) y ventanas del ático: de día son sombra,
+                 de noche se encienden con luz dorada. -->
+            <path class="arch" d="M214.9 350V338.4a2.4 2.4 0 0 1 4.8 0V350zM220.6 350V339.1a3.2 3.2 0 0 1 6.3 0V350zM228.8 350V339.8a3.8 3.8 0 0 1 7.6 0V350zM239 350V340.4a4.4 4.4 0 0 1 8.8 0V350zM251.1 350V340.9a4.9 4.9 0 0 1 9.7 0V350zM264.7 350V341.2a5.2 5.2 0 0 1 10.4 0V350zM279.3 350V341.4a5.4 5.4 0 0 1 10.9 0V350zM294.5 350V341.5a5.5 5.5 0 0 1 11 0V350zM309.9 350V341.4a5.4 5.4 0 0 1 10.9 0V350zM324.9 350V341.2a5.2 5.2 0 0 1 10.4 0V350zM339.1 350V340.9a4.9 4.9 0 0 1 9.7 0V350zM352.2 350V340.4a4.4 4.4 0 0 1 8.8 0V350zM363.6 350V339.8a3.8 3.8 0 0 1 7.6 0V350zM373.1 350V339.1a3.2 3.2 0 0 1 6.3 0V350zM380.3 350V338.4a2.4 2.4 0 0 1 4.8 0V350zM214.9 331V319.4a2.4 2.4 0 0 1 4.8 0V331zM220.6 331V320.1a3.2 3.2 0 0 1 6.3 0V331zM228.8 331V320.8a3.8 3.8 0 0 1 7.6 0V331zM239 331V321.4a4.4 4.4 0 0 1 8.8 0V331zM251.1 331V321.9a4.9 4.9 0 0 1 9.7 0V331zM264.7 331V322.2a5.2 5.2 0 0 1 10.4 0V331zM279.3 331V322.4a5.4 5.4 0 0 1 10.9 0V331zM294.5 331V322.5a5.5 5.5 0 0 1 11 0V331zM309.9 331V322.4a5.4 5.4 0 0 1 10.9 0V331zM324.9 331V322.2a5.2 5.2 0 0 1 10.4 0V331zM339.1 331V321.9a4.9 4.9 0 0 1 9.7 0V331zM352.2 331V321.4a4.4 4.4 0 0 1 8.8 0V331zM363.6 331V320.8a3.8 3.8 0 0 1 7.6 0V331zM373.1 331V320.1a3.2 3.2 0 0 1 6.3 0V331zM380.3 331V319.4a2.4 2.4 0 0 1 4.8 0V331zM214.9 312V301.4a2.4 2.4 0 0 1 4.8 0V312zM220.6 312V302.1a3.2 3.2 0 0 1 6.3 0V312zM228.8 312V302.8a3.8 3.8 0 0 1 7.6 0V312zM239 312V303.4a4.4 4.4 0 0 1 8.8 0V312zM251.1 312V303.9a4.9 4.9 0 0 1 9.7 0V312zM264.7 312V304.2a5.2 5.2 0 0 1 10.4 0V312zM279.3 312V304.4a5.4 5.4 0 0 1 10.9 0V312zM294.5 312V304.5a5.5 5.5 0 0 1 11 0V312zM309.9 312V304.4a5.4 5.4 0 0 1 10.9 0V312zM324.9 312V304.2a5.2 5.2 0 0 1 10.4 0V312zM216.2 282h2.2v7h-2.2zM222.5 282h2.6v7h-2.6zM231 282h3.2v7h-3.2zM241.6 282h3.7v7h-3.7zM254 282h4.1v7h-4.1zM267.7 282h4.4v7h-4.4zM282.4 282h4.6v7h-4.6zM297.7 282h4.6v7h-4.6z"/>
+          </g>
+
+          <!-- Pinos piñoneros (el árbol típico de Roma) y cipreses -->
+          <g class="c-tree">
+            <!-- Pino grande (izquierda): tronco, ramas y copa en sombrilla -->
+            <path d="M168 353C167 330 160 300 156 262L161 262C165 296 172 326 175 353Z"/>
+            <path d="M158 277C150 271 140 267 130 262L132 260C142 264 152 268 160 272Z"/>
+            <path d="M160 268C168 264 178 262 187 259L187 261.5C179 264 170 266 161 271Z"/>
+            <path d="M104 258C98 252 104 244 114 245C116 238 128 234 137 238C142 231 156 230 163 235C170 229 186 230 190 237C198 234 210 238 209 245C217 248 216 257 207 259C196 263 182 260 172 262C162 264 150 261 140 263C128 265 112 264 104 258Z"/>
+            <!-- Pino pequeño (extremo izquierdo, se ve en pantallas anchas) -->
+            <path d="M62 353C61 330 58 300 56 276L60 276C63 300 66 330 67 353Z"/>
+            <path d="M24 274C20 268 26 262 34 263C37 257 48 255 54 259C60 253 74 254 78 260C86 259 94 264 91 270C93 276 84 278 76 277C66 279 52 277 42 278C32 279 26 278 24 274Z"/>
+            <!-- Cipreses (derecha) -->
+            <path d="M478 292C475 304 473 328 475 353L482 353C484 328 481 304 478 292Z"/>
+            <path d="M494 268C489 286 486 318 489 353L499 353C502 318 499 286 494 268Z"/>
+            <path d="M508 282C504 298 502 324 504 353L512 353C514 324 512 298 508 282Z"/>
+            <!-- Pino pequeño (extremo derecho) -->
+            <path d="M552 353C553 330 556 304 557 280L561 280C560 304 558 330 557 353Z"/>
+            <path d="M522 278C518 272 524 266 532 267C535 261 546 259 552 263C558 257 572 258 576 264C584 263 592 268 589 274C591 280 582 282 574 281C564 283 550 281 540 282C530 283 524 282 522 278Z"/>
+          </g>
+
+          <!-- Suelo (primer plano) -->
+          <path class="c-near" d="M0 353C120 349 220 355 320 352C420 349 520 355 600 351V480H0Z"/>
+
+          <!-- Faroles: poste + luz + resplandor (se encienden al anochecer) -->
+          <g class="lamps">
+            <g><rect class="lamp__post" x="127.4" y="340" width="1.2" height="14"/><circle class="lamp__glow" cx="128" cy="339.5" r="8" fill="url(#lamp-glow-it)"/><circle class="lamp__bulb" cx="128" cy="339.5" r="1.7"/></g>
+            <g><rect class="lamp__post" x="187.4" y="340" width="1.2" height="14"/><circle class="lamp__glow" cx="188" cy="339.5" r="8" fill="url(#lamp-glow-it)"/><circle class="lamp__bulb" cx="188" cy="339.5" r="1.7"/></g>
+            <g><rect class="lamp__post" x="413.4" y="340" width="1.2" height="14"/><circle class="lamp__glow" cx="414" cy="339.5" r="8" fill="url(#lamp-glow-it)"/><circle class="lamp__bulb" cx="414" cy="339.5" r="1.7"/></g>
+            <g><rect class="lamp__post" x="451.4" y="340" width="1.2" height="14"/><circle class="lamp__glow" cx="452" cy="339.5" r="8" fill="url(#lamp-glow-it)"/><circle class="lamp__bulb" cx="452" cy="339.5" r="1.7"/></g>
+            <g><rect class="lamp__post" x="531.4" y="340" width="1.2" height="14"/><circle class="lamp__glow" cx="532" cy="339.5" r="8" fill="url(#lamp-glow-it)"/><circle class="lamp__bulb" cx="532" cy="339.5" r="1.7"/></g>
+          </g>
+        </svg>
+
+        <span class="sky__veil"></span>
+      </div>
+
+      <!-- ENCABEZADO: bandera ondeando + país + ciudad.
+           Las franjas que hacen ondear la bandera las crea script.js; si no
+           hay JS, la bandera se ve quieta (fondo de .flag__cloth). -->
+      <header class="place__head">
+        <span class="flag flag--it" aria-hidden="true"><span class="flag__cloth" data-role="flag"></span></span>
+        <div class="place__names">
+          <h2 class="place__country" id="it-name">Italia</h2>
+          <p class="place__city">Roma</p>
+        </div>
+      </header>
+
+      <!-- RELOJ: horas:minutos grandes; segundos y a. m./p. m. al lado.
+           Cada "slot" es un dígito que rueda hacia arriba al cambiar.
+           El reloj visual se oculta a lectores de pantalla; para ellos
+           está el texto #it-sr (se actualiza cada minuto). -->
+      <div class="place__time">
+        <p class="clock" aria-hidden="true">
+          <span class="clock__main">
+            <span class="slot" data-d="h1"></span><span class="slot" data-d="h2"></span><span class="clock__colon">:</span><span class="slot" data-d="m1"></span><span class="slot" data-d="m2"></span>
+          </span>
+          <span class="clock__side">
+            <span class="clock__sec"><span class="slot" data-d="s1"></span><span class="slot" data-d="s2"></span></span>
+            <span class="clock__period" data-role="period"></span>
+          </span>
+        </p>
+        <p class="place__date"><span data-role="date"></span><span class="place__shift" data-role="shift" hidden>+1 día</span></p>
+        <p class="sr-only" id="it-sr" data-role="sr"></p>
+      </div>
+    </article>
+
+    <!-- ┌──────────────────────────────────────────────────────────────┐
+         │ PUENTE CENTRAL · diferencia horaria                          │
+         │ script.js calcula la diferencia en vivo: hoy son 7 horas     │
+         │ (Italia en horario de verano) y pasa sola a 6 horas cuando   │
+         │ Italia cambia la hora (último domingo de octubre).           │
+         └──────────────────────────────────────────────────────────────┘ -->
+    <div class="bridge" data-role="bridge">
+      <span class="bridge__wire" aria-hidden="true"></span>
+      <p class="bridge__badge">
+        <span class="bridge__num" data-role="diff-num">7</span>
+        <span class="bridge__unit" data-role="diff-unit">horas</span>
+      </p>
+      <p class="bridge__note" data-role="diff-note">Italia va adelante</p>
+    </div>
+
+    <!-- ┌──────────────────────────────────────────────────────────────┐
+         │ TARJETA · COLOMBIA (Cartagena)                               │
+         │ Zona America/Bogota (UTC−5 todo el año, sin horario de       │
+         │ verano) y coordenadas de la Torre del Reloj.                 │
+         └──────────────────────────────────────────────────────────────┘ -->
+    <article class="place place--co" data-place="colombia" tabindex="0" aria-labelledby="co-name" aria-describedby="co-sr">
+
+      <div class="sky" aria-hidden="true">
+        <canvas class="sky__stars" data-role="stars"></canvas>
+
+        <div class="moon" data-role="moon">
+          <span class="moon__halo"></span>
+          <svg class="moon__svg" viewBox="0 0 100 100">
+            <defs>
+              <radialGradient id="moon-lit-co" cx="42%" cy="38%" r="70%">
+                <stop offset="0" stop-color="#fffdf4"/>
+                <stop offset=".65" stop-color="#ebe7da"/>
+                <stop offset="1" stop-color="#c9c4b4"/>
+              </radialGradient>
+              <clipPath id="moon-clip-co"><path data-role="moon-phase" d="M50 2a48 48 0 1 1 0 96a48 48 0 1 1 0-96z"/></clipPath>
+            </defs>
+            <circle class="moon__dark" cx="50" cy="50" r="48"/>
+            <g clip-path="url(#moon-clip-co)">
+              <circle cx="50" cy="50" r="48" fill="url(#moon-lit-co)"/>
+              <g class="moon__maria">
+                <ellipse cx="35" cy="33" rx="13" ry="10"/>
+                <ellipse cx="57" cy="32" rx="8" ry="7"/>
+                <ellipse cx="63" cy="47" rx="9" ry="7"/>
+                <ellipse cx="74" cy="58" rx="5" ry="7"/>
+                <ellipse cx="80" cy="36" rx="5" ry="4"/>
+                <ellipse cx="24" cy="54" rx="11" ry="17"/>
+                <ellipse cx="45" cy="66" rx="8" ry="6"/>
+              </g>
+              <circle class="moon__crater" cx="48" cy="83" r="2.6"/>
+            </g>
+          </svg>
+        </div>
+
+        <div class="sun" data-role="sun">
+          <span class="sun__halo"></span>
+          <span class="sun__rays"></span>
+          <span class="sun__disc"></span>
+        </div>
+
+        <div class="clouds">
+          <svg class="cloud" style="--top:23%; --w:27%; --dur:135s; --delay:-20s" viewBox="0 0 120 46"><path class="cloud__body" d="M14 44C5 44 1 37 5 31C2 23 10 16 19 19C21 9 34 4 44 10C50 2 66 1 73 10C80 5 93 7 96 17C106 15 116 23 113 33C118 38 113 44 106 44Z"/><path class="cloud__shade" d="M6 36C24 41 82 42 114 35C114 41 110 44 106 44L14 44C9 44 6 41 6 36Z"/></svg>
+          <svg class="cloud" style="--top:36%; --w:21%; --dur:105s; --delay:-70s" viewBox="0 0 120 46"><path class="cloud__body" d="M14 44C5 44 1 37 5 31C2 23 10 16 19 19C21 9 34 4 44 10C50 2 66 1 73 10C80 5 93 7 96 17C106 15 116 23 113 33C118 38 113 44 106 44Z"/><path class="cloud__shade" d="M6 36C24 41 82 42 114 35C114 41 110 44 106 44L14 44C9 44 6 41 6 36Z"/></svg>
+          <svg class="cloud" style="--top:28%; --w:33%; --dur:170s; --delay:-120s" viewBox="0 0 120 46"><path class="cloud__body" d="M14 44C5 44 1 37 5 31C2 23 10 16 19 19C21 9 34 4 44 10C50 2 66 1 73 10C80 5 93 7 96 17C106 15 116 23 113 33C118 38 113 44 106 44Z"/><path class="cloud__shade" d="M6 36C24 41 82 42 114 35C114 41 110 44 106 44L14 44C9 44 6 41 6 36Z"/></svg>
+        </div>
+
+        <!-- PAISAJE LEJANO · Cartagena: el mar Caribe (con olitas) y los
+             edificios de Bocagrande al otro lado de la bahía. -->
+        <svg class="scene" viewBox="0 0 600 480" preserveAspectRatio="xMidYMax slice">
+          <defs>
+            <linearGradient id="sea-co" x1="0" y1="300" x2="0" y2="350" gradientUnits="userSpaceOnUse">
+              <stop offset="0" class="sea-top"/>
+              <stop offset="1" class="sea-bot"/>
+            </linearGradient>
+          </defs>
+          <rect x="0" y="300" width="600" height="180" fill="url(#sea-co)"/>
+          <!-- Bocagrande: torres sobre la línea del horizonte -->
+          <path class="c-far" d="M28 300V288h6V300zM36 300V281h8V300zM46 300V286h6V300zM54 300V273h10V300zM66 300V283h7V300zM75 300V269h9V300zM86 300V279h6V300zM94 300V264h11V300zM107 300V275h7V300zM116 300V270h9V300zM127 300V282h6V300zM135 300V267h10V300zM147 300V277h7V300zM156 300V272h8V300zM166 300V285h6V300zM174 300V280h9V300zM185 300V289h6V300zM193 300V287h8V300zM79.1 269v-5h0.8v5zM99.1 264v-5h0.8v5zM120.1 270v-5h0.8v5zM139.6 267v-5h0.8v5z"/>
+          <g class="win win--far win--cool">
+            <rect x="29.3" y="292.7" width="1.2" height="1.2" style="--th:.19"/>
+            <rect x="40.4" y="295.6" width="1.2" height="1.2" style="--th:.07"/>
+            <rect x="37.3" y="286.8" width="1.2" height="1.2" style="--th:.43"/>
+            <rect x="47.8" y="294.2" width="1.2" height="1.2" style="--th:.46"/>
+            <rect x="57.5" y="279.3" width="1.2" height="1.2" style="--th:.81"/>
+            <rect x="55.8" y="285" width="1.2" height="1.2" style="--th:.72"/>
+            <rect x="70.3" y="294" width="1.2" height="1.2" style="--th:.46"/>
+            <rect x="79.4" y="292.7" width="1.2" height="1.2" style="--th:.53"/>
+            <rect x="80.3" y="273.1" width="1.2" height="1.2" style="--th:.19"/>
+            <rect x="76.7" y="277.8" width="1.2" height="1.2" style="--th:.09"/>
+            <rect x="89" y="287.5" width="1.2" height="1.2" style="--th:.31"/>
+            <rect x="87.9" y="296" width="1.2" height="1.2" style="--th:.55"/>
+            <rect x="102.9" y="286.2" width="1.2" height="1.2" style="--th:.47"/>
+            <rect x="101.8" y="290.3" width="1.2" height="1.2" style="--th:.19"/>
+            <rect x="97.7" y="275" width="1.2" height="1.2" style="--th:.18"/>
+            <rect x="110.7" y="285.5" width="1.2" height="1.2" style="--th:.78"/>
+            <rect x="109.2" y="280.7" width="1.2" height="1.2" style="--th:.48"/>
+            <rect x="110.4" y="295.1" width="1.2" height="1.2" style="--th:.34"/>
+            <rect x="123" y="285.2" width="1.2" height="1.2" style="--th:.08"/>
+            <rect x="117.8" y="288.1" width="1.2" height="1.2" style="--th:.67"/>
+            <rect x="117.6" y="276.2" width="1.2" height="1.2" style="--th:.85"/>
+            <rect x="130.1" y="291.4" width="1.2" height="1.2" style="--th:.23"/>
+            <rect x="139.6" y="274.8" width="1.2" height="1.2" style="--th:.78"/>
+            <rect x="141.6" y="284.4" width="1.2" height="1.2" style="--th:.39"/>
+            <rect x="150.6" y="290.4" width="1.2" height="1.2" style="--th:.13"/>
+            <rect x="157.3" y="295.4" width="1.2" height="1.2" style="--th:.75"/>
+            <rect x="159.5" y="276.5" width="1.2" height="1.2" style="--th:.65"/>
+            <rect x="168.5" y="292.9" width="1.2" height="1.2" style="--th:.23"/>
+            <rect x="176.4" y="290.6" width="1.2" height="1.2" style="--th:.62"/>
+            <rect x="187.1" y="296" width="1.2" height="1.2" style="--th:.55"/>
+            <rect x="196.7" y="290.8" width="1.2" height="1.2" style="--th:.19"/>
+          </g>
+        </svg>
+
+        <!-- OLAS: capa propia (mismo viewBox) para que su vaivén lo mueva
+             la tarjeta gráfica sin redibujar el resto del paisaje. -->
+        <svg class="scene scene--waves" viewBox="0 0 600 480" preserveAspectRatio="xMidYMax slice">
+          <path class="waves" d="M0.1 304h20.4M40.6 304h13.2M69.6 304h21.3M110.8 304h26.7M173.9 304h10.2M204.3 304h22M245.9 304h11.4M295.7 304h20.1M342.1 304h24.3M401.4 304h12.6M430.5 304h17.3M472.8 304h18M523.8 304h22.1M585.5 304h10.7M0.2 309h28.8M49.4 309h14M89.1 309h19.1M129.4 309h15.3M182.8 309h19.6M238.7 309h21.9M276 309h31.8M343.5 309h31.2M412.8 309h28.5M459.6 309h20.5M499.7 309h18.6M533.9 309h18.2M591.6 309h15.6M3.7 315h21.5M64 315h35.6M128.1 315h28.8M174.9 315h18.3M232.4 315h25.3M285.9 315h29.5M330.9 315h25.5M383.4 315h32.1M433.6 315h34.8M484.5 315h15.6M529.5 315h27.7M577.4 315h14M-2.6 322h29M56.5 322h24.1M109.7 322h27M175 322h18.1M225.8 322h19.1M269.1 322h31.1M322 322h21.2M376.8 322h14.4M417.2 322h40.3M497.3 322h14.4M531.3 322h19.8M589.4 322h37M1.1 330h19M55.7 330h36.2M121.8 330h45.1M197.9 330h14.2M247.4 330h23.4M302.1 330h43.6M363.1 330h17.6M397.6 330h31.4M450.1 330h33.1M515.8 330h20.4M566.7 330h22.3"/>
+        </svg>
+
+        <!-- REFLEJOS sobre el mar (sol y luna): van entre el mar y la
+             muralla; script.js los mueve debajo del astro. -->
+        <span class="glint glint--sun" data-role="glint-sun"><span></span></span>
+        <span class="glint glint--moon" data-role="glint-moon"><span></span></span>
+
+        <!-- PAISAJE CERCANO · Cartagena: ciudad amurallada, catedral,
+             San Pedro Claver, muralla con garita, Torre del Reloj (con su
+             reloj marcando la hora real de Cartagena), faroles, palmeras. -->
+        <svg class="scene" viewBox="0 0 600 480" preserveAspectRatio="xMidYMax slice">
+          <defs>
+            <radialGradient id="lamp-glow-co">
+              <stop offset="0" stop-color="#ffd890" stop-opacity=".85"/>
+              <stop offset="1" stop-color="#ffd890" stop-opacity="0"/>
+            </radialGradient>
+            <radialGradient id="clock-glow-co">
+              <stop offset="0" stop-color="#fff1c4" stop-opacity=".9"/>
+              <stop offset="1" stop-color="#fff1c4" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+
+          <!-- Ciudad detrás de la muralla (techos, catedral y San Pedro Claver) -->
+          <g class="c-mid">
+            <path d="M0 338V330H14V327H28V331H40V326H56V329H70V325H86V330H98V327H112V331H124V326H140V329H154V324H168V328H184V322H198V326H212V320H246V324H262V338ZM338 338V322H360V318H392V324H400V330H414V333H430V329H446V332H462V328H478V331H494V327H510V330H526V326H542V330H558V327H574V331H600V338Z"/>
+            <!-- Catedral de Santa Catalina: torre con cúpula -->
+            <rect x="222" y="282" width="18" height="40"/>
+            <rect x="225" y="270" width="12" height="13"/>
+            <path d="M223.5 271C223.5 258.5 238.5 258.5 238.5 271Z"/>
+            <rect x="230.4" y="253" width="1.2" height="9"/>
+            <!-- San Pedro Claver: tambor y cúpula -->
+            <rect x="368" y="307" width="16" height="12"/>
+            <path d="M366 308.5C366 294 386 294 386 308.5Z"/>
+            <rect x="375" y="292" width="2" height="6"/>
+            <rect x="375.6" y="287" width="0.8" height="5"/>
+          </g>
+          <g class="win">
+            <rect x="20" y="331.5" width="2.2" height="2.6" style="--th:.3"/>
+            <rect x="46" y="329.5" width="2.2" height="2.6" style="--th:.65"/>
+            <rect x="76" y="328.5" width="2.2" height="2.6" style="--th:.15"/>
+            <rect x="104" y="330.5" width="2.2" height="2.6" style="--th:.5"/>
+            <rect x="146" y="331" width="2.2" height="2.6" style="--th:.8"/>
+            <rect x="196" y="327" width="2.2" height="2.6" style="--th:.25"/>
+            <rect x="230" y="292" width="2" height="3.4" style="--th:.4"/>
+            <rect x="250" y="326.5" width="2.2" height="2.6" style="--th:.7"/>
+            <rect x="352" y="325" width="2.2" height="2.6" style="--th:.2"/>
+            <rect x="408" y="332.5" width="2.2" height="2.4" style="--th:.55"/>
+            <rect x="438" y="331.5" width="2.2" height="2.4" style="--th:.35"/>
+            <rect x="470" y="331" width="2.2" height="2.4" style="--th:.75"/>
+            <rect x="520" y="330" width="2.2" height="2.4" style="--th:.1"/>
+            <rect x="556" y="331" width="2.2" height="2.4" style="--th:.6"/>
+          </g>
+
+          <!-- Muralla: cuerpo, parapeto y cordón de piedra -->
+          <rect class="c-wall" x="0" y="336" width="600" height="37"/>
+          <rect class="c-wall2" x="0" y="335" width="600" height="2.4"/>
+          <rect class="c-wall2" x="0" y="346" width="600" height="1.8"/>
+
+          <!-- Garita colonial sobre la muralla (con su cúpula y mirilla) -->
+          <g class="c-wall">
+            <rect x="163" y="320" width="14" height="16"/>
+            <path d="M161.5 320.6C161.5 310 178.5 310 178.5 320.6Z"/>
+            <circle cx="170" cy="310.6" r="1.4"/>
+          </g>
+          <path class="c-wall2" d="M163 337H177L173 345H167Z"/>
+          <rect class="arch" x="169.2" y="325" width="1.6" height="6"/>
+
+          <!-- Torre del Reloj: puerta de tres arcos, balaustrada, cuerpo
+               con el reloj, campanario con arco y cupulita con linterna. -->
+          <g class="tower">
+            <rect class="c-tower" x="262" y="297" width="76" height="76"/>
+            <rect class="c-trim" x="258" y="294" width="84" height="4"/>
+            <rect class="c-trim" x="262" y="285.5" width="76" height="2"/>
+            <path class="c-trim" d="M263 287h2v7h-2zM270 287h2v7h-2zM277 287h2v7h-2zM284 287h2v7h-2zM291 287h2v7h-2zM298 287h2v7h-2zM305 287h2v7h-2zM312 287h2v7h-2zM319 287h2v7h-2zM326 287h2v7h-2zM333 287h2v7h-2z"/>
+            <rect class="c-tower" x="284" y="250" width="32" height="36"/>
+            <rect class="c-trim" x="284" y="250" width="3" height="36"/>
+            <rect class="c-trim" x="313" y="250" width="3" height="36"/>
+            <rect class="c-trim" x="281" y="247" width="38" height="3.5"/>
+            <rect class="c-tower" x="288" y="231" width="24" height="16.5"/>
+            <rect class="c-trim" x="286" y="228.5" width="28" height="3"/>
+            <path class="c-tower" d="M289 229C289 215 311 215 311 229Z"/>
+            <rect class="c-trim" x="298" y="211" width="4" height="8"/>
+            <path class="c-tower" d="M297 211.5L300 207L303 211.5Z"/>
+            <rect class="c-trim" x="299.5" y="200" width="1" height="7.5"/>
+            <rect class="c-trim" x="285" y="300" width="3" height="73"/>
+            <rect class="c-trim" x="312" y="300" width="3" height="73"/>
+            <!-- Arcos de la puerta, ventana y arco del campanario -->
+            <path class="arch" d="M290 373V344a10 10 0 0 1 20 0V373zM268 373V355a6 6 0 0 1 12 0V373zM320 373V355a6 6 0 0 1 12 0V373zM296 330V320a4 4 0 0 1 8 0V330zM295 247V238a5 5 0 0 1 10 0V247z"/>
+            <!-- Reloj: brillo nocturno, esfera y manecillas (hora real) -->
+            <circle class="clockface__glow" cx="300" cy="268" r="16" fill="url(#clock-glow-co)"/>
+            <circle class="clockface" cx="300" cy="268" r="8.6"/>
+            <circle class="clockface__rim" cx="300" cy="268" r="8.6"/>
+            <g class="clockface__hands">
+              <path data-role="hand-h" d="M300 268V263"/>
+              <path data-role="hand-m" d="M300 268V261"/>
+            </g>
+          </g>
+
+          <!-- Faroles coloniales al pie de la muralla -->
+          <g class="lamps">
+            <g><rect class="lamp__post" x="205.3" y="352" width="1.4" height="21"/><circle class="lamp__glow" cx="206" cy="349.5" r="9" fill="url(#lamp-glow-co)"/><rect class="lamp__post" x="203.6" y="346.4" width="4.8" height="1.4"/><circle class="lamp__bulb" cx="206" cy="349.6" r="1.8"/></g>
+            <g><rect class="lamp__post" x="393.3" y="352" width="1.4" height="21"/><circle class="lamp__glow" cx="394" cy="349.5" r="9" fill="url(#lamp-glow-co)"/><rect class="lamp__post" x="391.6" y="346.4" width="4.8" height="1.4"/><circle class="lamp__bulb" cx="394" cy="349.6" r="1.8"/></g>
+            <g><rect class="lamp__post" x="547.3" y="352" width="1.4" height="21"/><circle class="lamp__glow" cx="548" cy="349.5" r="9" fill="url(#lamp-glow-co)"/><rect class="lamp__post" x="545.6" y="346.4" width="4.8" height="1.4"/><circle class="lamp__bulb" cx="548" cy="349.6" r="1.8"/></g>
+          </g>
+
+          <!-- Palmeras (troncos, hojas y cocos) -->
+          <g class="c-tree">
+            <path d="M452 373C450 334 444 290 430 250L434 249C448 288 458 332 461 373Z"/>
+            <path d="M432 248Q402.7 253 390.7 280.2Q406.9 263.2 432 250.2zM432 248Q406.4 240.5 388.4 260.1Q408.3 251.9 432 250.2zM432 248Q418 229.2 396 237.3Q416 240.5 432 250.2zM432 248Q435.7 228.7 418.5 219.2Q430.6 235 432 250.2zM432 248Q424.5 228.9 439.5 215Q429.9 234.2 432 250.2zM432 248Q443.2 227.7 465.7 233.1Q445.9 238.8 432 250.2zM432 248Q456.4 238.6 475 256.8Q455 250.1 432 250.2zM432 248Q461.3 252.2 473.8 279Q457.2 262.5 432 250.2z"/>
+            <circle cx="430" cy="253" r="2.3"/><circle cx="435" cy="253.6" r="2"/>
+            <path d="M492 373C496 336 506 298 520 267L524 268C512 300 503 338 500 373Z"/>
+            <path d="M522 266Q499.4 271.4 491.2 293.1Q502.9 279.1 522 268.2zM522 266Q502.7 259.5 488.5 274.1Q503.9 268.3 522 268.2zM522 266Q515.6 249.4 498 251.4Q512.9 257.6 522 268.2zM522 266Q529.7 251.6 519.6 238.9Q525.4 255.1 522 268.2zM522 266Q523.9 248.2 541.5 245.5Q527.7 255.6 522 268.2zM522 266Q537.9 255.3 553.5 266.3Q537.8 264.3 522 268.2zM522 266Q544.3 266.6 555.5 285.9Q541.6 274.9 522 268.2z"/>
+            <circle cx="521" cy="270.5" r="1.9"/>
+            <path d="M62 373C60 336 56 296 50 263L54 263C60 296 66 336 70 373Z"/>
+            <path d="M52 262Q26.8 268 17.6 292.2Q30.6 276.6 52 264.2zM52 262Q29.9 255.5 14.4 272.5Q31.5 265.4 52 264.2zM52 262Q42.4 244.5 22.9 249.2Q40 254 52 264.2zM52 262Q59.1 245.6 46.6 232.9Q54.4 249.9 52 264.2zM52 262Q51 245.4 66.6 239.8Q55 251.5 52 264.2zM52 262Q66.4 247.2 84.9 256.4Q67.4 257.2 52 264.2zM52 262Q75.7 258.8 90 278Q73.4 268.4 52 264.2zM52 262Q77.3 267 87.2 290.8Q73.6 275.7 52 264.2z"/>
+            <circle cx="51" cy="266.4" r="1.9"/>
+          </g>
+
+          <!-- Suelo (camellón al pie de la muralla) -->
+          <rect class="c-near" x="0" y="373" width="600" height="107"/>
+          <rect class="c-wall2" x="0" y="372.4" width="600" height="1.4"/>
+        </svg>
+
+        <span class="sky__veil"></span>
+      </div>
+
+      <header class="place__head">
+        <span class="flag flag--co" aria-hidden="true"><span class="flag__cloth" data-role="flag"></span></span>
+        <div class="place__names">
+          <h2 class="place__country" id="co-name">Colombia</h2>
+          <p class="place__city">Cartagena</p>
+        </div>
+      </header>
+
+      <div class="place__time">
+        <p class="clock" aria-hidden="true">
+          <span class="clock__main">
+            <span class="slot" data-d="h1"></span><span class="slot" data-d="h2"></span><span class="clock__colon">:</span><span class="slot" data-d="m1"></span><span class="slot" data-d="m2"></span>
+          </span>
+          <span class="clock__side">
+            <span class="clock__sec"><span class="slot" data-d="s1"></span><span class="slot" data-d="s2"></span></span>
+            <span class="clock__period" data-role="period"></span>
+          </span>
+        </p>
+        <p class="place__date"><span data-role="date"></span><span class="place__shift" data-role="shift" hidden>+1 día</span></p>
+        <p class="sr-only" id="co-sr" data-role="sr"></p>
+      </div>
+    </article>
+  </main>
+
+  <!-- Aviso flotante del "viaje en el tiempo": solo aparece mientras se
+       arrastra un cielo (o se usan las flechas) y muestra cuánto se
+       adelantó o atrasó. Al soltar, todo vuelve solo a la hora real. -->
+  <div class="travel" data-role="travel" aria-hidden="true">
+    <svg class="travel__icon" viewBox="0 0 24 24"><path d="M3.6 12a8.4 8.4 0 1 0 2.5-6M3 4.2V8h3.8M12 7.5V12l3 2"/></svg>
+    <span data-role="travel-text"></span>
+  </div>
+
+</body>
+</html>
