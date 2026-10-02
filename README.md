@@ -6,6 +6,8 @@ El cielo de cada ciudad es el **de verdad**: la posición del sol se calcula con
 
 Hecha en **HTML, CSS y JavaScript puros**: sin librerías, sin instalar nada y sin pedir datos a internet. Todo se calcula en el propio navegador.
 
+🌐 **En vivo:** [diferencias-horarios.pages.dev](https://diferencias-horarios.pages.dev/)
+
 ---
 
 ## Qué tiene
@@ -22,12 +24,17 @@ Hecha en **HTML, CSS y JavaScript puros**: sin librerías, sin instalar nada y s
   - **Cartagena:** la Torre del Reloj (**su reloj marca la hora real de Cartagena**), las murallas con su garita, la catedral, San Pedro Claver, palmeras, el mar Caribe con olas y reflejos, y los edificios de Bocagrande.
 - **Las ventanas y los faroles se encienden de a poco** cuando anochece.
 - **Banderas que ondean**, nubes que cruzan el cielo y tonos que cambian con la luz del día.
-- **Viaje en el tiempo** (función oculta, ver abajo).
-- **Responsive:** en computador las tarjetas van lado a lado; en celular y tablet vertical se apilan y las dos caben en la pantalla sin hacer scroll.
+- **Viaje en el tiempo** (función oculta, ver abajo): con mouse, con el dedo o con el teclado.
+- **Vista previa al compartir:** al pegar el enlace en WhatsApp, Facebook, X o Telegram sale una foto de la página con el título *"Diferencia de hora entre Colombia e Italia"* y el texto *"… Creado por JX."*
+- **Responsive:** en computador, tablet acostada y celular acostado las tarjetas van lado a lado; en celular y tablet en vertical se apilan y las dos caben en la pantalla sin hacer scroll (desde 280 px de ancho).
 
 ---
 
 ## Cómo verla
+
+**En internet:** https://diferencias-horarios.pages.dev/
+
+**En el computador:**
 
 1. Descomprime el ZIP.
 2. Abre `index.html` con doble clic (Chrome, Edge, Safari o Firefox).
@@ -57,13 +64,16 @@ Mientras viajas, arriba aparece un aviso con cuánto adelantaste o atrasaste (ej
 
 ```
 Diferencia_Horaria_Italia_Colombia/
-├── index.html        ← la página: tarjetas, dibujos de las ciudades y textos
-├── CLAUDE.md         ← contexto técnico para retomar el proyecto con IA
+├── index.html        ← la página: tarjetas, dibujos de las ciudades, textos y datos para compartir
 ├── README.md         ← este archivo
+├── _redirects        ← regla de Cloudflare Pages (protege un archivo privado de trabajo)
+├── .gitignore        ← archivos que no se suben al repositorio
 ├── css/
 │   └── styles.css    ← diseño, colores, animaciones y responsive
-└── js/
-    └── script.js     ← hora de cada país, astronomía, cielo, estrellas y viaje en el tiempo
+├── js/
+│   └── script.js     ← hora de cada país, astronomía, cielo, estrellas y viaje en el tiempo
+└── img/
+    └── og-imagen.jpg ← imagen de la vista previa al compartir (1200 × 630)
 ```
 
 ---
@@ -106,8 +116,10 @@ Diferencia_Horaria_Italia_Colombia/
 | Altura, tamaño o velocidad de las nubes | `index.html` | Atributo `style` de cada nube: `--top`, `--w`, `--dur`, `--delay` |
 | Las tipografías | `index.html` y `css/styles.css` | El `<link>` de Google Fonts y las variables `--font-display` y `--font-ui` |
 | El tamaño de las tarjetas | `css/styles.css` | Variable `--card-w` en `:root` y la sección 18 (Responsive) |
+| El título, el texto o la imagen que salen al compartir el enlace | `index.html` | Bloque `ZONA EDITABLE · COMPARTIR` dentro del `<head>` |
+| El dominio (si la página se muda) | `index.html` | Mismo bloque: cambiar `https://diferencias-horarios.pages.dev/` en `canonical`, `og:url`, `og:image` y `twitter:image` |
 
-> Antes de hacer cambios grandes, lee el `CLAUDE.md`: ahí están la ficha de diseño, el mapa completo del código y los puntos delicados (por ejemplo, si se redibuja una ciudad hay que mantener la línea del horizonte).
+> Punto delicado: si se redibuja una ciudad hay que mantener la línea del horizonte (y = 300 en el dibujo) o actualizar `VB` en `js/script.js`; si no, el sol se esconde en el lugar equivocado.
 
 Todo el código está comentado en español, bloque por bloque.
 
@@ -115,9 +127,11 @@ Todo el código está comentado en español, bloque por bloque.
 
 ## Publicarla en internet
 
+Hoy está publicada en **Cloudflare Pages**: https://diferencias-horarios.pages.dev/
+
 Es una página estática, así que se puede publicar gratis.
 
-**Cloudflare Pages (recomendado):**
+**Cloudflare Pages (la que se usa):**
 1. En el panel de Cloudflare entra a **Workers & Pages**.
 2. **Create application** → **Get started** → **Drag and drop your files**.
 3. Ponle un nombre al proyecto, arrastra la carpeta (o el ZIP) y pulsa **Deploy site**.
@@ -127,7 +141,11 @@ Es una página estática, así que se puede publicar gratis.
 
 **Hostinger u otro hosting:** sube el **contenido** de la carpeta (no la carpeta) a `public_html` desde el Administrador de archivos.
 
-> En cualquier caso, `index.html` debe quedar en la raíz junto a `css/` y `js/`.
+> En cualquier caso, `index.html` debe quedar en la raíz junto a `css/`, `js/`, `img/` y `_redirects`.
+
+**Vista previa en WhatsApp y redes.** WhatsApp y Facebook guardan la vista previa en caché varios días. Si se cambia la imagen, conviene ponerle otro nombre (ej. `og-imagen-2.jpg`) y actualizarlo en el `<head>`. Para revisar cómo se ve, se puede pegar el enlace en el [Depurador de Compartir de Facebook](https://developers.facebook.com/tools/debug/) (sirve también para WhatsApp) y pulsar *Volver a extraer*.
+
+> La imagen para compartir es una foto fija de la página tomada con 7 horas de diferencia (horario de verano de Italia). Entre el último domingo de octubre y el último domingo de marzo la página en vivo muestra 6 horas; la página siempre muestra el dato correcto, la foto es solo ilustrativa.
 
 ---
 
@@ -143,29 +161,45 @@ Es una página estática, así que se puede publicar gratis.
 - Cada tarjeta se puede enfocar con `Tab`, y los lectores de pantalla leen la hora completa (ej. "En Cartagena, Colombia, son las 6:40 p. m. del jueves, 1 de octubre. Es de noche."), actualizada cada minuto.
 - Si el sistema tiene activado **"reducir movimiento"**, se apagan las animaciones decorativas (nubes, bandera, dígitos rodantes, fugaces). El cielo sigue cambiando con la hora real.
 - Las animaciones van por la tarjeta gráfica y las estrellas solo se dibujan cuando oscurece. Cuando la pestaña no está a la vista, la página casi no consume.
-- Sin imágenes pesadas: todo está dibujado en código (≈ 115 KB en total, sin contar las fuentes).
+- Sin imágenes pesadas: todo está dibujado en código (≈ 120 KB en total, sin contar las fuentes). La única imagen, `img/og-imagen.jpg` (69 KB), no la descarga la página: solo la leen WhatsApp y las redes para la vista previa.
 
 ---
 
 ## Verificación de los datos
 
-Pruebas hechas el 1 de octubre de 2026:
+Última revisión completa: **2 de octubre de 2026, 12:05 a. m. (hora de Colombia)**. Primera revisión: 1 de octubre de 2026.
 
-**Salida y puesta del sol**, comparadas con PyEphem (cálculo astronómico de alta precisión, misma convención estándar):
+**Salida y puesta del sol**, calculadas con el mismo código de la página y comparadas con PyEphem (cálculo astronómico de alta precisión con la convención oficial del Observatorio Naval de EE. UU.: centro del sol a −0,833°):
 
 | Fecha | Ciudad | Salida (página) | Salida (PyEphem) | Puesta (página) | Puesta (PyEphem) |
 |---|---|---|---|---|---|
 | 1 oct 2026 | Roma | 07:06:46 | 07:06:46 | 18:51:58 | 18:51:56 |
-| 26 oct 2026 | Roma | 06:34:59 | 06:35:02 | 17:12:20 | 17:12:23 |
+| 2 oct 2026 | Roma | 07:07:51 | 07:07:50 | 18:50:15 | 18:50:13 |
+| 25 oct 2026 (ya en horario de invierno) | Roma | 06:33:48 | 06:33:51 | 17:13:44 | 17:13:47 |
+| 21 dic 2026 | Roma | 07:34:15 | 07:34:13 | 16:41:55 | 16:41:55 |
 | 1 oct 2026 | Cartagena | 05:50:54 | 05:50:54 | 17:52:33 | 17:52:31 |
+| 2 oct 2026 | Cartagena | 05:50:52 | 05:50:51 | 17:51:56 | 17:51:55 |
+| 21 dic 2026 | Cartagena | 06:14:50 | 06:14:49 | 17:45:54 | 17:45:53 |
 
-Las páginas web de horarios del sol dan valores con 1 o 2 minutos de diferencia porque cada una calcula con supuestos un poco distintos (por ejemplo, la altura del lugar).
+La página coincide con PyEphem con 3 segundos o menos de diferencia. Las páginas web de horarios del sol dan entre 0 y 2 minutos de diferencia porque usan otras coordenadas (el centro de la ciudad y no el Coliseo o la Torre del Reloj) y redondean distinto: por ejemplo, para el 2 de octubre [sunrisesunsettime.org](https://www.sunrisesunsettime.org/europe/italy/rome.htm) da en Roma 07:08 y 18:52, y [Meteogram](https://meteogram.org/sun/colombia/cartagena/) da en Cartagena 05:50 y 17:52 (1 de octubre).
 
-**Fases de la luna de octubre de 2026**, comparadas con el calendario de TheSkyLive: cuarto menguante el 3 de octubre, luna nueva el 10, cuarto creciente el 18 y luna llena el 26. La página da 50,6 %, 0,1 %, 50,6 % y 99,8 % de luna iluminada en esos momentos.
+**El dibujo concuerda con la hora:** se pusieron los relojes exactamente a la hora oficial de salida y de puesta y se midió el sol en pantalla: en los 4 casos su centro queda **justo sobre la línea del horizonte** (medio sol), por la izquierda (este) al salir y por la derecha (oeste) al ponerse. Al mediodía solar de Cartagena (11:51 a. m.) el sol está en el centro y arriba. Las luces de la ciudad y las estrellas se encienden con el crepúsculo, como en la vida real.
 
-**Diferencia horaria:** 7 h hasta el 25 de octubre de 2026 a la 01:00 UTC; 6 h desde ese momento; 7 h otra vez desde el 28 de marzo de 2027.
+**Fases de la luna de octubre de 2026** (horas UTC del calendario de [TheSkyLive](https://theskylive.com/moon-calendar?year=2026&month=10) y [timeanddate](https://www.timeanddate.com/news/astronomy/moon-october-2026), confirmadas con PyEphem): cuarto menguante el 3 a las 13:25, luna nueva el 10 a las 15:50, cuarto creciente el 18 a las 16:12 y luna llena el 26 a las 04:11. En esos momentos la página da 50,4 %, 0,1 %, 50,6 % y 99,8 % de luna iluminada (PyEphem: 50,1 %, 0,1 %, 50,2 % y 99,8 %).
 
-**Pantallas:** probada en 1440×900, 1366×657, tablet 820×1180, celulares 390×664 y 360×640, y celular acostado 844×390 (motor de Chrome). No hay scroll horizontal ni errores o advertencias en la consola. También funciona abriendo el archivo directamente (`file://`).
+**Diferencia horaria:** 7 h hasta el domingo 25 de octubre de 2026 a la 01:00 UTC (en Italia las 3:00 pasan a ser las 2:00, según [Il Gazzettino](https://www.ilgazzettino.it/italia/cronaca_bianca/ora_solare_2026_quando_cambia_lancette_indietro-9790736.html)); desde ese segundo, 6 h; y 7 h otra vez desde el 28 de marzo de 2027. Se probó segundo a segundo: a las 2:59:59 a. m. de Italia la página dice "7 horas" y al siguiente segundo marca 2:00 a. m. y "6 horas". Colombia sigue en UTC−5 todo el año, sin horario de verano ([timeanddate](https://www.timeanddate.com/time/zone/colombia)). Todo da igual con el navegador configurado en otra zona (se probó en Tokio).
+
+**Pantallas** (motor de Chrome, con las tipografías reales cargadas), 37 tamaños:
+
+| Tipo | Tamaños probados (ancho × alto visible) |
+|---|---|
+| Celulares Android | Galaxy Fold cerrado 280×653, 360×560 (Chrome con barras), Galaxy S8 360×740, Galaxy A 360×800, Pixel 5 393×851, Pixel 7 412×839 y 412×915 |
+| iPhone | SE 1.ª gen. 320×460 (Safari con barras) y 320×568, SE 2/3 375×553 (Safari) y 375×667, 12 mini 375×812, 14 390×664 (Safari) y 390×844, 15 Pro 393×852, 11 414×896, 14 Plus 428×926, 15 Pro Max 430×932 |
+| Tablets | 600×960, 720×800, iPad mini 768×1024, 800×1280, iPad Air 820×1180 |
+| Celular acostado | 568×320, 640×360, 653×280, 667×375, 740×360, 812×375, 844×390, 932×430 |
+| Computador | 600×500, 720×720, 800×600, 1366×657, 1920×969 |
+
+Resultado: sin scroll horizontal en ningún tamaño, sin textos encimados, las dos tarjetas caben sin scroll en todos los celulares en vertical (incluido el iPhone SE más pequeño con las barras de Safari) y sin errores ni advertencias en la consola. El viaje en el tiempo se probó con mouse, con el dedo (eventos táctiles reales) y con el teclado; el gesto vertical sigue siendo scroll normal. También se probó el modo "reducir movimiento" y que el reloj avance solo cada segundo. El HTML pasa la validación de html-validate y el JS no tiene errores en ESLint.
 
 ---
 
@@ -189,6 +223,9 @@ Su fase sí es la real. Su posición es la opuesta al sol, para que siempre se v
 **No veo animaciones.**
 Probablemente el sistema tiene activada la opción de reducir movimiento. La hora y el cielo siguen funcionando.
 
+**Compartí el enlace en WhatsApp y no sale la foto (o sale una vieja).**
+WhatsApp guarda la vista previa en caché. Revisa el enlace en el [Depurador de Compartir de Facebook](https://developers.facebook.com/tools/debug/), pulsa *Volver a extraer* y vuelve a compartir. Si cambiaste la imagen, ponle otro nombre de archivo.
+
 ---
 
 ## Copia de seguridad
@@ -203,8 +240,12 @@ Guarda el ZIP en Google Drive o en otro lugar seguro. Si lo editas seguido, súb
 - Fase de la luna: fórmulas de **Astronomy Answers** (aa.quae.nl), las mismas que usa la librería **SunCalc**.
 - Tipografías: **Fraunces** (Undercase Type) y **Outfit** (Rodrigo Fuenzalida), licencia SIL Open Font License, vía Google Fonts.
 - Colores de las banderas: valores oficiales de Italia (Pantone del decreto de 2006) y de Colombia.
-- Verificación: PyEphem; calendario lunar de [TheSkyLive](https://theskylive.com/moon-calendar?year=2026&month=10); horarios del sol de [sunrisesunsettime.org](https://www.sunrisesunsettime.org/europe/italy/rome.htm), [sunrise-sunset.org](https://sunrise-sunset.org/it/rome) y [Meteogram](https://meteogram.org/sun/colombia/cartagena/); diferencia horaria de [CityTimeDiff](https://citytimediff.com/es/compare/colombia/rome); cambio de hora en Italia según [Quotidiano di Ragusa](https://www.quotidianodiragusa.it/2026/09/27/attualita/ora-solare-2026-cambio-ora/); pasos de publicación de la [documentación de Cloudflare Pages](https://developers.cloudflare.com/pages/get-started/direct-upload/).
+- Vista previa al compartir: requisitos de la [documentación de WhatsApp (Meta)](https://developers.facebook.com/documentation/business-messaging/whatsapp/link-previews/) (imagen de menos de 600 KB y 300 px o más de ancho) y protocolo [Open Graph](https://ogp.me/).
+- Protección de archivos privados en Cloudflare: [reglas `_redirects` de Cloudflare Pages](https://developers.cloudflare.com/pages/configuration/redirects/) ("se aplican aunque exista el archivo").
+- Verificación: PyEphem; calendario lunar de [TheSkyLive](https://theskylive.com/moon-calendar?year=2026&month=10); horarios del sol de [sunrisesunsettime.org](https://www.sunrisesunsettime.org/europe/italy/rome.htm), [sunrise-sunset.org](https://sunrise-sunset.org/it/rome) y [Meteogram](https://meteogram.org/sun/colombia/cartagena/); diferencia horaria de [CityTimeDiff](https://citytimediff.com/es/compare/colombia/rome); cambio de hora en Italia según [Quotidiano di Ragusa](https://www.quotidianodiragusa.it/2026/09/27/attualita/ora-solare-2026-cambio-ora/) e [Il Gazzettino](https://www.ilgazzettino.it/italia/cronaca_bianca/ora_solare_2026_quando_cambia_lancette_indietro-9790736.html); zona horaria de Colombia en [timeanddate](https://www.timeanddate.com/time/zone/colombia); pasos de publicación de la [documentación de Cloudflare Pages](https://developers.cloudflare.com/pages/get-started/direct-upload/).
 
 ---
 
 Proyecto personal de **JX** · Cartagena, Colombia · 2026.
+
+*Documentación actualizada el 2 de octubre de 2026 a las 12:05 a. m. (hora de Colombia).*

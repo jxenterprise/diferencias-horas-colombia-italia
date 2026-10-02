@@ -56,14 +56,29 @@
   --radius: 26px;
   --gap: clamp(14px, 2.4vw, 34px);
 
-  /* Ancho de cada tarjeta: crece con la pantalla (máx. 440px) pero nunca
-     más alto que la ventana (relación 3:4). Se recalcula con svh abajo. */
-  --card-w: min(clamp(250px, 35vw, 440px), calc((100vh - 80px) * .75));
+  /* Margen lateral del escenario (respeta el notch del iPhone acostado). */
+  --side: max(clamp(16px, 3vw, 40px), env(safe-area-inset-left), env(safe-area-inset-right));
+
+  /* Ancho de cada tarjeta lado a lado: crece con la pantalla (máx. 440px),
+     nunca más alta que la ventana (relación 3:4) y nunca más ancha de lo
+     que cabe junto al puente (así no hay scroll horizontal en pantallas
+     angostas acostadas). Se recalcula con svh abajo. */
+  --card-w: min(
+    clamp(250px, 35vw, 440px),
+    calc((100vh - 80px) * .75),
+    calc((100vw - clamp(90px, 10vw, 140px) - 2 * var(--gap) - 2 * var(--side)) / 2)
+  );
 }
 
 /* svh = alto "seguro" en celulares (sin contar barras del navegador). */
 @supports (height: 100svh) {
-  :root { --card-w: min(clamp(250px, 35vw, 440px), calc((100svh - 80px) * .75)); }
+  :root {
+    --card-w: min(
+      clamp(250px, 35vw, 440px),
+      calc((100svh - 80px) * .75),
+      calc((100vw - clamp(90px, 10vw, 140px) - 2 * var(--gap) - 2 * var(--side)) / 2)
+    );
+  }
 }
 
 
@@ -113,8 +128,9 @@ body {
 
 /* ==========================================================================
    3. ESCENARIO
-   Computador/tablet: [Italia] [puente] [Colombia] en una fila.
-   Celular (≤ 719px): se apilan (ver sección 18).
+   Computador, tablet acostada y celular acostado: [Italia] [puente]
+   [Colombia] en una fila. Celular y tablet en vertical (o pantallas de
+   menos de 560px de ancho): se apilan (ver sección 18).
    ========================================================================== */
 .stage {
   position: relative;
@@ -690,7 +706,8 @@ body {
   justify-content: space-between;
   margin-left: .5em;
   padding: .16em 0 .12em;
-  font-size: calc(var(--clock-size) * .3);
+  /* Piso de 10px: en celulares muy angostos seguiría legible. */
+  font-size: max(10px, calc(var(--clock-size) * .3));
 }
 
 .clock__sec {
@@ -743,7 +760,8 @@ body {
   align-items: center;
   flex-wrap: wrap;
   gap: .5em;
-  font-size: calc(var(--clock-size) * .245);
+  /* Piso de 11px: en celulares angostos la fecha no baja de tamaño legible. */
+  font-size: max(11px, calc(var(--clock-size) * .245));
   font-weight: 400;
   letter-spacing: .01em;
   color: var(--ink-2);
@@ -958,10 +976,12 @@ body {
   .bridge__note { font-size: .9rem; }
 }
 
-/* Celular y tablet vertical: tarjetas apiladas y lo bastante bajitas para
-   que las DOS quepan en la pantalla sin hacer scroll. El paisaje (viewBox
-   ancho) muestra más ciudad a los lados en este formato. */
-@media (max-width: 719px), (orientation: portrait) and (max-width: 1100px) {
+/* Celular y tablet en vertical: tarjetas apiladas y lo bastante bajitas
+   para que las DOS quepan en la pantalla sin hacer scroll. El paisaje
+   (viewBox ancho) muestra más ciudad a los lados en este formato.
+   Con el celular ACOSTADO no se apilan (quedarían muy anchas y bajitas: el
+   cielo desaparecería); van lado a lado (ver --card-w y el bloque de abajo). */
+@media (orientation: portrait) and (max-width: 1100px), (max-width: 559px) {
   .stage {
     grid-template-columns: minmax(0, 1fr);
     width: 100%;
@@ -974,14 +994,19 @@ body {
       max(14px, env(safe-area-inset-left));
   }
 
+  /* Alto de cada tarjeta = (alto de pantalla − puente, separaciones y
+     márgenes) ÷ 2. Los márgenes incluyen el notch/la barra de inicio del
+     iPhone (env) para que tampoco haya scroll si se abre desde el inicio. */
   .place {
     width: 100%;
     aspect-ratio: auto;
-    height: clamp(232px, calc((100vh - 116px) / 2), 540px);
+    height: clamp(180px, calc((100vh - 116px) / 2), 540px);
   }
 
   @supports (height: 100svh) {
-    .place { height: clamp(232px, calc((100svh - 116px) / 2), 540px); }
+    .place {
+      height: clamp(180px, calc((100svh - 88px - max(14px, env(safe-area-inset-top)) - max(14px, env(safe-area-inset-bottom))) / 2), 540px);
+    }
   }
 
   @supports (width: 1cqw) {
@@ -1042,7 +1067,7 @@ body {
 
 /* Celular acostado (pantalla baja): se mantienen lado a lado y el ancho
    lo limita el alto de la pantalla (ver --card-w). */
-@media (max-height: 520px) and (min-width: 720px) {
+@media (max-height: 520px) and (orientation: landscape) and (min-width: 560px) {
   .bridge { --badge: 72px; }
   .bridge__note { font-size: .72rem; top: calc(100% + 10px); }
 }

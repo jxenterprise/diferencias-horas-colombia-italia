@@ -12,6 +12,9 @@
             js/script.js   → hora de cada zona, posición del sol, fase de
                              la luna, colores del cielo, estrellas y el
                              "viaje en el tiempo" (arrastrar el cielo).
+            img/og-imagen.jpg → imagen que se ve al compartir el enlace
+                             (WhatsApp, redes). Ver ZONA EDITABLE · COMPARTIR.
+  Publicada en: https://diferencias-horarios.pages.dev/ (Cloudflare Pages).
   Cómo funciona: este HTML trae el esqueleto fijo (tarjetas, siluetas de
             cada ciudad y textos). Todo lo que cambia con la hora lo pinta
             script.js escribiendo variables CSS (--sky-top, --c-land, etc.)
@@ -22,10 +25,40 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Italia · Colombia — Hora en vivo</title>
+  <title>Diferencia de hora · Colombia e Italia</title>
   <meta name="description" content="La hora en vivo de Roma, Italia y Cartagena, Colombia, con su cielo real de día y de noche y la diferencia horaria entre los dos países.">
   <meta name="theme-color" content="#0b0c11">
   <meta name="color-scheme" content="dark">
+
+  <!-- ▼▼▼ ZONA EDITABLE · COMPARTIR (WhatsApp, Facebook, X, Telegram…) ▼▼▼
+       Lo que se ve al pegar el enlace en un chat o red social: título,
+       texto, imagen y dominio. WhatsApp y Facebook necesitan direcciones
+       COMPLETAS (https://…), por eso aquí va el dominio publicado.
+       · Si cambia el dominio: reemplazar "https://diferencias-horarios.pages.dev/"
+         en canonical, og:url, og:image y twitter:image.
+       · Imagen: img/og-imagen.jpg (1200×630, foto de la página). Va en JPG
+         y no en WebP porque WhatsApp no siempre muestra vistas previas WebP.
+       · WhatsApp guarda la vista previa en caché: si se cambia la imagen,
+         renombrarla (ej. og-imagen-2.jpg) para que la vuelva a leer. -->
+  <link rel="canonical" href="https://diferencias-horarios.pages.dev/">
+  <meta name="author" content="JX">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="es_CO">
+  <meta property="og:site_name" content="Diferencia de hora · Colombia e Italia">
+  <meta property="og:url" content="https://diferencias-horarios.pages.dev/">
+  <meta property="og:title" content="Diferencia de hora entre Colombia e Italia">
+  <meta property="og:description" content="La hora en vivo de Cartagena y Roma, con su cielo real de día y de noche. Creado por JX.">
+  <meta property="og:image" content="https://diferencias-horarios.pages.dev/img/og-imagen.jpg">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Las ventanas de cielo de Roma (Italia) y Cartagena (Colombia) con la hora de cada ciudad y la diferencia horaria entre los dos países.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Diferencia de hora entre Colombia e Italia">
+  <meta name="twitter:description" content="La hora en vivo de Cartagena y Roma, con su cielo real de día y de noche. Creado por JX.">
+  <meta name="twitter:image" content="https://diferencias-horarios.pages.dev/img/og-imagen.jpg">
+  <meta name="twitter:image:alt" content="Las ventanas de cielo de Roma (Italia) y Cartagena (Colombia) con la hora de cada ciudad y la diferencia horaria entre los dos países.">
+  <!-- ▲▲▲ FIN ZONA EDITABLE · COMPARTIR ▲▲▲ -->
 
   <!-- Ícono de la pestaña (SVG en línea: sol y luna). Va embebido para no
        depender de otro archivo y evitar el error 404 de /favicon.ico. -->
