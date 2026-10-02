@@ -1,0 +1,6 @@
+# _redirects · Cloudflare Pages
+# CLAUDE.md es privado (contexto de trabajo con IA, solo para JX). Aunque
+# se suba por error junto con la página, Cloudflare aplica estas reglas
+# antes de servir archivos: quien lo pida va al inicio y nunca lo ve.
+/CLAUDE.md  /  301
+/claude.md  /  301

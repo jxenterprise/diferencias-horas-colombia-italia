@@ -981,6 +981,15 @@
     endDrag();
   }
 
+  /** En pantallas táctiles el navegador "captura" el dedo en el elemento
+      tocado (canvas, SVG…). Cuando la tarjeta toma la captura, ese hijo
+      la pierde y avisa con lostpointercapture: eso NO es soltar el dedo,
+      así que solo cuenta si quien pierde la captura es la tarjeta misma. */
+  function onLostCapture(ev) {
+    if (ev.target !== ev.currentTarget) return;
+    onPointerUp(ev);
+  }
+
   function onKeyDown(ev) {
     if (ev.key === 'ArrowRight' || ev.key === 'ArrowLeft') {
       ev.preventDefault();
@@ -1110,7 +1119,7 @@
       p.el.addEventListener('pointermove', onPointerMove);
       p.el.addEventListener('pointerup', onPointerUp);
       p.el.addEventListener('pointercancel', onPointerUp);
-      p.el.addEventListener('lostpointercapture', onPointerUp);
+      p.el.addEventListener('lostpointercapture', onLostCapture);
       p.el.addEventListener('keydown', onKeyDown);
     });
 
